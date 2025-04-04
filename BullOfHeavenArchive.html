@@ -1,0 +1,3701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bull of Heaven Archive</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --background-color: #f8fafc;
+            --text-color: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .category-section {
+            margin: 2rem 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+
+        .category-title {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .category-description {
+            display: block;
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: normal;
+            margin-top: 0.25rem;
+        }
+
+        .category-title::after {
+            content: '▼';
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .category-title.collapsed::after {
+            transform: rotate(-90deg); /* Rotate arrow when collapsed */
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            overflow: hidden;
+        }
+
+        .links-grid.collapsed {
+            opacity: 0;
+            max-height: 0;
+        }
+
+        .link-card {
+            padding: 1rem;
+            border-radius: 8px;
+            background: #fff;
+            transition: transform 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .link-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .link-title {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .link-description {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .link-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+            
+            .category-section {
+                padding: 1rem;
+            }
+        }
+
+        .search-box {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        }
+
+        #collapseAllBtn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        #collapseAllBtn:hover {
+            background-color: #1d4ed8;
+        }
+
+        @media (max-width: 768px) {
+            .search-box {
+                flex-direction: column;
+            }
+            
+            #collapseAllBtn {
+                padding: 0.75rem 1rem;
+                width: 100%;
+            }
+        }
+
+        .category-counter {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 1000;
+        /* Small size and fixed positioning */
+    }
+
+        .warning-message {
+        color: #dc2626; /* Red-600 */
+        font-size: 0.9rem;
+        text-align: center;
+        padding: 1rem;
+        margin: 2rem 0;
+        border: 1px solid #fecaca; /* Red-100 */
+        border-radius: 8px;
+        background-color: #fef2f2; /* Red-50 */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Bull of Heaven Archive</h1>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search release...">
+          <button id="collapseAllBtn">Collapse All</button>
+      </div>
+
+        <div id="linksContainer"></div>
+    </div>
+
+    <script>
+        // Link data structure
+        const linksData = [
+        {
+  category: "Aleph Series",
+  links: [
+        {
+          title: "Aleph-Null (ℵ₀)",
+          url: "https://buzzheavier.com/8fomm6cs4kov",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-One (ℵ₁)",
+          url: "https://buzzheavier.com/ue0xcncjym31",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Two (ℵ₂)",
+          url: "https://buzzheavier.com/tjt2yyimds9a",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Three (ℵ₃)",
+          url: "https://buzzheavier.com/t4kp9n7kgtjy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Four (ℵ₄)",
+          url: "https://buzzheavier.com/h0exkunorvva",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Five (ℵ₅)",
+          url: "https://buzzheavier.com/3jxfnfomvma7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Six (ℵ₆)",
+          url: "https://buzzheavier.com/pqjtutghlpb1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Seven (ℵ₇)",
+          url: "https://buzzheavier.com/8tq787tkz3kq",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Eight (ℵ₈)",
+          url: "https://buzzheavier.com/q6pcuc8zuwp5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Nine (ℵ₉)",
+          url: "https://buzzheavier.com/pruj3blfdccy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Ten (ℵ₁₀)",
+          url: "https://buzzheavier.com/4noqml6j1zjd",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Aleph-Eleven (ℵ₁₁)",
+          url: "https://buzzheavier.com/o8vh0pt6v2fm",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+{
+  category: "Bootlegs",
+  links: [
+        {
+          title: "118: The Chosen Priest and Apostle of Infinite Space (Fan Excerpts)",
+          url: "https://buzzheavier.com/23zp08i8fb10",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "209: Blurred with Tears and Suffering Beyond Hope (Fan Excerpts)",
+          url: "https://buzzheavier.com/ctj5gvnuwr7z",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Bull of Heaven: The Top 40 Hits!",
+          url: "https://buzzheavier.com/izh1vr4mbx36",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Essential Bull of Heaven 2008-2016",
+          url: "https://buzzheavier.com/dlrkfu7bqcrk",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+{
+  category: "Latin Series",
+  links: [
+        {
+          title: "Duolo",
+          url: "https://buzzheavier.com/p4y6n1eqzya1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Ex oblivione",
+          url: "https://buzzheavier.com/uh0cltglyqb1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Ex silentio",
+          url: "https://buzzheavier.com/utb3n2r0rqce",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Ex umbra in solem",
+          url: "https://buzzheavier.com/2cytcugs9idk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Extinctus amabitur idem",
+          url: "https://buzzheavier.com/jgic2d81k8gl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Imperioso",
+          url: "https://buzzheavier.com/95r3mhadubsv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Incalzando",
+          url: "https://buzzheavier.com/xkjvlhbe1x2q",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Insistendo",
+          url: "https://buzzheavier.com/zzq2mjaxesnh",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Irato",
+          url: "https://buzzheavier.com/zbzxoch089my",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Non omnis moriar",
+          url: "https://buzzheavier.com/jlq5m0dd3pdw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Omnibus locis fit caedes",
+          url: "https://buzzheavier.com/eftu4uppnhka",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Quasi Una Fantasia",
+          url: "https://buzzheavier.com/kx9ynjq39ee2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Quos amor verus tenuit tenebit",
+          url: "https://buzzheavier.com/obfnbq2d1zy9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Sic faciunt omnes",
+          url: "https://buzzheavier.com/m3apakqdjdat",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+{
+  category: "Numbered Releases",
+  links: [
+        {
+          title: "001: Weed Problem",
+          url: "https://buzzheavier.com/bqyprx0z3jga",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "002: He Is Not Dead, but Sleepeth",
+          url: "https://buzzheavier.com/2vvf63dp2w3l",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "003: Eleven Floors Down",
+          url: "https://buzzheavier.com/pqz8625smojg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "004: Reasoning in State Hospital",
+          url: "https://buzzheavier.com/r7fsnh5767le",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "005: A Lovely Pear",
+          url: "https://buzzheavier.com/vq5gpoc7ul7m",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "006: The Myth of Dinosaurs",
+          url: "https://buzzheavier.com/64eebwjs3iqc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "007: Reptilian Takeover",
+          url: "https://buzzheavier.com/296sp3mw99io",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "008: A Wall Between Two Gardens",
+          url: "https://buzzheavier.com/8c3pl3qsldkr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "009: First Our Pleasures Die",
+          url: "https://buzzheavier.com/4tgqpmmu6z5m",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "010: A White Surveillance Van",
+          url: "https://buzzheavier.com/vwjgcyv101pk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "011: Spacewalking Your New Way Home",
+          url: "https://buzzheavier.com/8urtqe9vlpeg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "012: Timeship 2012",
+          url: "https://buzzheavier.com/tnndlsdtw2og",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "013: Elsa, Are You in There?",
+          url: "https://buzzheavier.com/ey1wcdmpxj3t",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "014: Upon One Pair of English Legs",
+          url: "https://buzzheavier.com/tytslk805yol",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "015: Sun Ritual",
+          url: "https://buzzheavier.com/cam9t5aiv52y",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "016: Get Tree Body (Brainwash Solution)",
+          url: "https://buzzheavier.com/burjgwhgybzu",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "017: Its Bones Are Soft",
+          url: "https://buzzheavier.com/lscbcl68376a",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "018: Candles Green, Heads and Skulls",
+          url: "https://buzzheavier.com/nlcbr245dfcf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "019: Hypnosis, Drugs, and Mind Control (The Beginning: A Touch)",
+          url: "https://buzzheavier.com/ti5v9tuik99h",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "020: Legend of Degree",
+          url: "https://buzzheavier.com/pyv9twzvjtt0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "021: A Series of Elaborate Precautions",
+          url: "https://buzzheavier.com/es5y52f5lj0z",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "022: Man-Lizards, Masters of Venus",
+          url: "https://buzzheavier.com/xle13g6ecmu5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "023: Odd Things, Brick Buildings",
+          url: "https://buzzheavier.com/5ntchgp50fxi",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "024: Some Vast Unknown",
+          url: "https://buzzheavier.com/o5rokrcc7mwu",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "025: Tale of an Earth Man",
+          url: "https://buzzheavier.com/qsqrf9qd2whs",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "026: A Curious Picture You See With Your Eyes Closed",
+          url: "https://buzzheavier.com/91r3psnpz7ig",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "027: Spirits Clad in Veils",
+          url: "https://buzzheavier.com/8s7s2yi4vjh8",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "028: Even to the Edge of Doom",
+          url: "https://buzzheavier.com/0igxdwg71wlo",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "029: Lions on a Banner",
+          url: "https://buzzheavier.com/v42ueq0zyi5i",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "030: In That Shadow Lurks a Smile",
+          url: "https://buzzheavier.com/60i33ke1ep0b",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "031: Babylonian Mathematics",
+          url: "https://buzzheavier.com/q4g7lx5q174z",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "032: There Is Nothing Hidden That Will Not Be Revealed Pt. 1",
+          url: "https://buzzheavier.com/00gm582y39na",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "033: There Is Nothing Hidden That Will Not Be Revealed Pt. 2",
+          url: "https://buzzheavier.com/eopgrpsc3f58",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "034: There Is Nothing Hidden That Will Not Be Revealed Pt. 3",
+          url: "https://buzzheavier.com/491416f4n512",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "035: There Is Nothing Hidden That Will Not Be Revealed Pt. 4",
+          url: "https://buzzheavier.com/vqfvzb3edbcr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "036: As Two From Ten Thousand Pt. 1",
+          url: "https://buzzheavier.com/by0yv2rlvl36",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "037: As Two From Ten Thousand Pt. 2",
+          url: "https://buzzheavier.com/4bdlpltal8it",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "038: A Foot in Place of a Foot",
+          url: "https://buzzheavier.com/hkzdjv68o96x",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "039: Become Smaller and Smaller",
+          url: "https://buzzheavier.com/dzuuql7mwo9p",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "040: A Beautiful Dog",
+          url: "https://buzzheavier.com/mdhyd4wi1brg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "041: By What Eternal Streams",
+          url: "https://buzzheavier.com/7sfpteqhvhto",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "042: Pre-Human Spawn of Cthulhu",
+          url: "https://buzzheavier.com/tpw66c4k4bqc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "043: He Is Cruel and Moves With Great Cunning",
+          url: "https://buzzheavier.com/dtsawd5wn8bl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "044: A Corpse in My Arms on Awakening",
+          url: "https://buzzheavier.com/11qn0ze4p4yw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "045: The Wicked Cease From Struggling",
+          url: "https://buzzheavier.com/xt3dink88k0y",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "046: In All Creatures Are Lust and Hunger",
+          url: "https://buzzheavier.com/3qmcmprtki1a",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "047: At One With Their Antagonists",
+          url: "https://buzzheavier.com/e6phtzjsf1wl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "048: Foreign Ideas, Alien Philosophies",
+          url: "https://buzzheavier.com/2sn13m1yf1yt",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "049: The Abyss of the Human Species",
+          url: "https://buzzheavier.com/8jo5c1nczplj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "050: Far From the Black Ocean",
+          url: "https://buzzheavier.com/r53f5tlc7hmi",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "051: Our Light Is a Voice",
+          url: "https://buzzheavier.com/6cvqt7rrefr6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "052: Without Hope, a Mute Offender",
+          url: "https://buzzheavier.com/xah5mc48wn64",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "053: La tristesse durera toujours",
+          url: "https://buzzheavier.com/w5rymh87890y",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "054: Guns, Girls, Psychoactive Drugs (Birth and Redeath)",
+          url: "https://buzzheavier.com/4wq9r3efdp84",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "055: A Killer's Apology Rebuffed (The Destroyer)",
+          url: "https://buzzheavier.com/kvyxodm35abf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "056: Return of Ghost Sheriff (Werewolves Are Chasing Me)",
+          url: "https://buzzheavier.com/oqq0qbal2ut0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "057: Narcolepsy: An Introduction",
+          url: "https://buzzheavier.com/zqbw1v1r677y",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "058: Narcolepsy: Dreamtime Collapsing",
+          url: "https://buzzheavier.com/msfu0j5vn5js",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "059: Narcolepsy: Four Thousand BC",
+          url: "https://buzzheavier.com/g4mboxg2ob65",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "060: Narcolepsy: Melting",
+          url: "https://buzzheavier.com/0x8m3d99pdxs",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "061: Inflame Thyself in Praying Pt. 1",
+          url: "https://buzzheavier.com/sylmmm4l6ve2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "062: Inflame Thyself in Praying Pt. 2",
+          url: "https://buzzheavier.com/exhraty6re5n",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "063: Inflame Thyself in Praying Pt. 3",
+          url: "https://buzzheavier.com/axzycjdl454g",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "064: Inflame Thyself in Praying Pt. 4",
+          url: "https://buzzheavier.com/qq6395mlx8bg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "065: Inflame Thyself in Praying Pt. 5",
+          url: "https://buzzheavier.com/ga8rn52662zy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "066: Inflame Thyself in Praying Pt. 6",
+          url: "https://buzzheavier.com/3x18rhi56klv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "067: Inflame Thyself in Praying Pt. 7",
+          url: "https://buzzheavier.com/ycujvwdhv4ak",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "068: Inflame Thyself in Praying Pt. 8",
+          url: "https://buzzheavier.com/tzjie9ry1myf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "069: Inflame Thyself in Praying Pt. 9",
+          url: "https://buzzheavier.com/9cgq44phx681",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "070: Inflame Thyself in Praying Pt. 10",
+          url: "https://buzzheavier.com/v0awfv69uinl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "071: Inflame Thyself in Praying Pt. 11",
+          url: "https://buzzheavier.com/sn7zpnh8925r",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "072: Inflame Thyself in Praying Pt. 12",
+          url: "https://buzzheavier.com/on2q8fzv2wen",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "073: Inflame Thyself in Praying Pt. 13",
+          url: "https://buzzheavier.com/slmddae3onus",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "074: He Dwells on the Shores of the Sea Pt. 1",
+          url: "https://buzzheavier.com/pcp7xokzghry",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "075: He Dwells on the Shores of the Sea Pt. 2",
+          url: "https://buzzheavier.com/uelfkqn86w0k",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "076: Mysterious Signals From Glowing Orbs",
+          url: "https://buzzheavier.com/q3l9nsaryzqm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "077: The End of the World Must Be Coming",
+          url: "https://buzzheavier.com/7q0ad7z7qfhi",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "078: Objective Contempt, Objective Conscience",
+          url: "https://buzzheavier.com/48if7869ctaj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "079: Praise to Our Common-Father-Endlessness",
+          url: "https://buzzheavier.com/zi38090da753",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "080: Your Way and Your Face Are Stainless",
+          url: "https://buzzheavier.com/vqzjsoy80t1z",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "081: You Took Dead Bones and You Covered Them With Bodies",
+          url: "https://buzzheavier.com/o333fa180sm5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "082: His Tail Dragged a Third of the Stars of Heaven",
+          url: "https://buzzheavier.com/5n7gs99emqb3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "083: A Great Fire-Red Dragon With Seven Heads and Ten Horns",
+          url: "https://buzzheavier.com/1vrbqzr6p7nn",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "084: The Marchers With Left Leg Extended",
+          url: "https://buzzheavier.com/39m0yl5lfwld",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "085: Die, Patriarch! The Screams of Infancy",
+          url: "https://buzzheavier.com/sjgd1rigf7kx",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "086: The Longest Distance Between Two Places",
+          url: "https://buzzheavier.com/lippg3jhb5in",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "087: A Half-Grown Boy in Sea Clothes",
+          url: "https://buzzheavier.com/29k53rmtpn50",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "088: Death With Every Step",
+          url: "https://buzzheavier.com/30kaunxwg49m",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "089: Death Had Taken Them, One by One",
+          url: "https://buzzheavier.com/wsl0qxfgmu4b",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "090: Death in Our Pockets",
+          url: "https://buzzheavier.com/1oc98zx38jvu",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "091: Up to the Rim of the Hollow",
+          url: "https://buzzheavier.com/hwd3b0guhxll",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "092: The Long Count",
+          url: "https://buzzheavier.com/rt5il0ua954j",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "093: They Found Her Footprints There",
+          url: "https://buzzheavier.com/sf6eu9p7kkpa",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "094: In Human Form This Fiend to Slay",
+          url: "https://buzzheavier.com/oro52hqrkvp7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "095: Unity Exists in the Categories",
+          url: "https://buzzheavier.com/o2kphen93a3t",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "096: This Is the Primal Identity",
+          url: "https://buzzheavier.com/l2pdq6mszb51",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "097: A Perspective, Not the Truth",
+          url: "https://buzzheavier.com/5nwn9ir1gzyf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "098: The Final Mystery Is Oneself",
+          url: "https://buzzheavier.com/qugmy865dvje",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "099: Quetzalcoatl and the Ancient Astronauts",
+          url: "https://buzzheavier.com/fmpllxxjaa8v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "100: The Thought That Counts",
+          url: "https://buzzheavier.com/iuq66eogmrcp",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "101: Like the First Pine Cone",
+          url: "https://buzzheavier.com/denzcmyd61nl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "102: Criminals, Fair and True",
+          url: "https://buzzheavier.com/n1o4n5bxit2p",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "103: Her Name Is Unending",
+          url: "https://buzzheavier.com/fs3i0yqzaof3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "104: You Are the Poltergeist",
+          url: "https://buzzheavier.com/bhkficy59h69",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "105: I'm Not Here Anymore",
+          url: "https://buzzheavier.com/evqxj11i727o",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "106: Let's Murder the Neighbors",
+          url: "https://buzzheavier.com/y1inpme2rraf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "107: Axiom of Choice",
+          url: "https://buzzheavier.com/w8qyc0oz16ju",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "108: Did You Know That the Bible Have the Answers?",
+          url: "https://buzzheavier.com/yg4ecjf9e5pn",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "109: Boxes of Scorpions Released by Tripwire",
+          url: "https://buzzheavier.com/jhx1rn0mio2v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "110: Superstring Theory Refuted",
+          url: "https://buzzheavier.com/9zquvcoovvk4",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "111: Superstring Theory Verified",
+          url: "https://buzzheavier.com/2zeg5yu2jrgp",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "112: Conquer! That Is Enough",
+          url: "https://buzzheavier.com/alwue81o1clf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "113: The Light Higher Than Eyesight",
+          url: "https://buzzheavier.com/bduzsj0bpba1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "114: Come Forth, O Children, Under the Stars",
+          url: "https://buzzheavier.com/m9cgy05wdfvv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "115: Swift as a Trodden Serpent Turn and Strike!",
+          url: "https://buzzheavier.com/t1t83q8jbmj1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "116: Rituals of the Elements and Feasts of the Times",
+          url: "https://buzzheavier.com/nadmlcaapo4c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "117: Change Not as Much as the Style of a Letter",
+          url: "https://buzzheavier.com/z0k9c7909vs4",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "118: The Chosen Priest and Apostle of Infinite Space",
+          url: "https://buzzheavier.com/cf7cl7lwi3co",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "119: Slippery Buttons, Live in the Upper World, 2003",
+          url: "https://buzzheavier.com/m0kgmek73ox3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "120: Everywhere Is Violence (The Machine Is Killing the Babies)",
+          url: "https://buzzheavier.com/tnjtfuccmtta",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "121: O Nobly-Born, They Are Not Really Precipices",
+          url: "https://buzzheavier.com/7ezs2tp7gds7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "122: Drums and Thigh-Bone Trumpets, Skull-Timbrels",
+          url: "https://buzzheavier.com/wczgyvi1k1us",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "123: Eighty Thousand Species of Mischievous Sprites",
+          url: "https://buzzheavier.com/7r7syorfgco3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "124: Be Not Daunted Thereby, Nor Terrified, Nor Awed",
+          url: "https://buzzheavier.com/ltzlipboonfc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "125: The City Freezing",
+          url: "https://buzzheavier.com/roe0qaqc1yyv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "126: The White Ivy",
+          url: "https://buzzheavier.com/28phd7yx1wdt",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "127: We Seem to Share Your Distress",
+          url: "https://buzzheavier.com/3hu22zxoe42r",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "128: Approaching Them in the Darkness",
+          url: "https://buzzheavier.com/r74fyfetcu0n",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "129: Between Them and Us Stands Our Fear",
+          url: "https://buzzheavier.com/ij3hn2l5hcqo",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "130: A Slow and Painful Execution",
+          url: "https://buzzheavier.com/jw3abjz9trru",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "131: Loaded With Buckshot",
+          url: "https://buzzheavier.com/fvx8wafsm29t",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "132: What Filthy Rotten Blood",
+          url: "https://buzzheavier.com/nci123v9r43b",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "133: On Wednesday Morning, When the Truck Rolls In",
+          url: "https://buzzheavier.com/9t4zlypqvgg5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "134: Lingering Under the Remainder of Her Disease",
+          url: "https://buzzheavier.com/jrdhlrmy5ip2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "135: Under This Umbrella of Satanism",
+          url: "https://buzzheavier.com/hr4qcdbqzk79",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "136: The Use of Obsessive Defenses",
+          url: "https://buzzheavier.com/iku5y09rab87",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "137: The Meaning of Hysterical Symptoms",
+          url: "https://buzzheavier.com/hnff5rhniaox",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "138: You Feel a Stillness All Around You, Caressing Your Face",
+          url: "https://buzzheavier.com/6vj956v18rv6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "139: My Doctor Gave Me Some",
+          url: "https://buzzheavier.com/c8eemqs8mu5c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "140: And Never Will",
+          url: "https://buzzheavier.com/kj63wv01xhdm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "141: Creation of Strange Matter",
+          url: "https://buzzheavier.com/tv70fm3rguld",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "142: Qualia and the Dynamic Core",
+          url: "https://buzzheavier.com/bfanrhbwtuob",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "143: The Hollow Booming of Pieces of Ordnance",
+          url: "https://buzzheavier.com/ovhkkx0c002d",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "144: Poured Onto That Marble Slab",
+          url: "https://buzzheavier.com/0dz3myq7j09v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "145: Note Notes, Forsooth, and Nothing!",
+          url: "https://buzzheavier.com/cjoixy3px44j",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "146: Vicious, Cruel, Incapable of Remorse",
+          url: "https://buzzheavier.com/s9ezjdp3e5wr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "147: The Most Merciful Thing That a Family Does",
+          url: "https://buzzheavier.com/u2tjrh993ycr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "148: And Madly Hangs the Grass With Silver Rags",
+          url: "https://buzzheavier.com/po1hf7ikeej3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "149: Still in My Thought That Lovely Image Breathes",
+          url: "https://buzzheavier.com/304k4lx6ucl1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "150: With Bare Feet I Trod Upon Thorns and Flints",
+          url: "https://buzzheavier.com/ykui4w835qq5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "151: Pleasure Alone Lends Value to Existence",
+          url: "https://buzzheavier.com/k379mr2qu365",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "152: The Last Example of These Unclean Horrors",
+          url: "https://buzzheavier.com/f59qef3cqzfi",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "153: The Branch of Gold Consecrated to the Subterranean Goddess",
+          url: "https://buzzheavier.com/883cbgyrjxs0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "154: In the Form of the Question Concerning the Thingness of Things",
+          url: "https://buzzheavier.com/s6lnjfbfv3kh",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "155: They Sacrificed Their Sons and Their Daughters Unto Devils",
+          url: "https://buzzheavier.com/sop2a2sszhpq",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "156: Crime and Infamy Have a Right of Asylum Here",
+          url: "https://buzzheavier.com/gcm00dbx9sim",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "157: Fairer Yet Through Sorrow and Separation",
+          url: "https://buzzheavier.com/b9c54ilv1r9c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "158: Prosperity Is Here. Stay With Us, Angel!",
+          url: "https://buzzheavier.com/fs2hnslk6upj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "159: White as the Petals of Some Water Flower",
+          url: "https://buzzheavier.com/7mw1bq7pxf4k",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "160: Your Best Loved and Always Known Must Leave",
+          url: "https://buzzheavier.com/tki1rvixqidx",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "161: Her Song Trembling the Twigs and Small Branches",
+          url: "https://buzzheavier.com/qek1svmnl7ja",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "162: In Their Terror Capable of Anything Pt. 1",
+          url: "https://buzzheavier.com/a8j5in3naq4n",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "163: In Their Terror Capable of Anything Pt. 2",
+          url: "https://buzzheavier.com/56u880a0hmbf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "164: Regrets Take the Place of Dreams",
+          url: "https://buzzheavier.com/1pdbwkuc75bg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "165: Out of the Nothing Beyond the Lake",
+          url: "https://buzzheavier.com/27nta6hu9lke",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "166: When the World Is Puddle-Wonderful",
+          url: "https://buzzheavier.com/geprk9ie4ull",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "167: Isolated Regions of the Human Soul",
+          url: "https://buzzheavier.com/w510p7tatz92",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "168: Go With Fiends in That Everlasting Fire",
+          url: "https://buzzheavier.com/ofuxxrwk01mr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "169: Alas! Thy Foul Will Hath Wrought My Woe",
+          url: "https://buzzheavier.com/kyfifgx2d3y9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "170: Low Is the Covering, Unhigh the Sidewalls",
+          url: "https://buzzheavier.com/b4wyicbuf9i6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "171: Buried in a Deep Pit, in a Doorless House",
+          url: "https://buzzheavier.com/f0jcxx4o5jjg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "172: Thus Are These Children Filled With Torment",
+          url: "https://buzzheavier.com/hk5yf0bd34hq",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "173: Sharp She Was and Keen, and Pleased the Devil",
+          url: "https://buzzheavier.com/kxn7gohmuf5d",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "174: It Was Not Known to Thee More Than to Thy Kin",
+          url: "https://buzzheavier.com/tv8dg1s1aim5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "175: Thou Lovedst the Traitors That Were Hateful to God",
+          url: "https://buzzheavier.com/7i3ddt43l71c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "176: Well Away! And Woe Is Me! That I Ever Came to Thee",
+          url: "https://buzzheavier.com/ao7w7t9bavrk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "177: Then Is That Wretched Life Ended All With Sad Departure",
+          url: "https://buzzheavier.com/pafmotu4nxet",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "178: For the Devil Taught Thee All, Chief Full Nigh Thy Heart",
+          url: "https://buzzheavier.com/sovq7r9gcz9u",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "179: Worms Have Shared Them, Gnawed Their Miserable Bones",
+          url: "https://buzzheavier.com/9srh9mvuyldm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "180: Now Is Thy Mouth Prevented, for Death Has Closed It",
+          url: "https://buzzheavier.com/or9oyx7d0vsb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "181: All Rueful Is Thy Lot, After Thy Wicked Life",
+          url: "https://buzzheavier.com/b2eku229wm7q",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "182: When Death, With His Dart, Pineth the Body",
+          url: "https://buzzheavier.com/gk0kcs8krja2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "183: Victim Accursed, Extend Thy Throat for My Knives",
+          url: "https://buzzheavier.com/ahqb6rwvnbka",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "184: Mayst Thou Fall by the Fires of the Heavenly Avenger",
+          url: "https://buzzheavier.com/nfwob9pwh79r",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "185: Submission to Leaders, Hostility to Outsiders",
+          url: "https://buzzheavier.com/50aa19t66y2x",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "186: A Donkey's Head Sold for Eighty Shekels of Silver",
+          url: "https://buzzheavier.com/c9rxv8xvlg0u",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "187: Never Mind the Fallibility of All the Human Beings",
+          url: "https://buzzheavier.com/j7qu1gaqmg2v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "188: Showering the Rank, Furry Body All Over the Tent",
+          url: "https://buzzheavier.com/k9vrdbxw8ely",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "189: From the Threshing Floor?  From the Winepress?",
+          url: "https://buzzheavier.com/fryj49b57l6r",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "190: Our Preferences Do Not Determine What's True",
+          url: "https://buzzheavier.com/up797ho29mnn",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "191: With a Sudden Jerk and Involuntary Gesture",
+          url: "https://buzzheavier.com/r520hwfrs6ix",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "192: May God Deal With Me, Be It Ever So Severely",
+          url: "https://buzzheavier.com/787gsybc43q6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "193: Look Death in the Eye and Be Grateful",
+          url: "https://buzzheavier.com/e4eix20s86r5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "194: Give Up Your Son So We May Eat Him",
+          url: "https://buzzheavier.com/k3uh67xqiqf6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "195: We Know Who Speaks for the Nations",
+          url: "https://buzzheavier.com/xujmm1z5du05",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "196: Incoherently Babbling Self-Accusations",
+          url: "https://buzzheavier.com/ptr26b4o1lg2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "197: When the Messenger Comes, Shut the Door",
+          url: "https://buzzheavier.com/kjiwm20nodd9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "198: A Faint Sensation of a Distant Memory",
+          url: "https://buzzheavier.com/5fb7mp2apcas",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "199: Ere I Forget, or Die, or Move Away",
+          url: "https://buzzheavier.com/8318gjbjl401",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "200: So We Cooked My Son and Ate Him",
+          url: "https://buzzheavier.com/u2ytrorakwol",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "201: How Strangely Still the Water Is Today",
+          url: "https://buzzheavier.com/n8vcsafuyrf6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "202: The Things That Hide in You Come Out Again",
+          url: "https://buzzheavier.com/szp6keel2zg9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "203: Like Vast Serpents Infold Around My Limbs",
+          url: "https://buzzheavier.com/py40rpm3bkbv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "204: For Idle Dreams of Things Which Cannot Be",
+          url: "https://buzzheavier.com/72kz9dtr84eb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "205: Of What Far Sea Upon What Unknown Ground",
+          url: "https://buzzheavier.com/l182tyn23ghn",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "206: Like Waters Flowing in the River's Course",
+          url: "https://buzzheavier.com/x30rru5f9cra",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "207: I Watched You Enter Your Home From Inside a Dumpster",
+          url: "https://buzzheavier.com/ug3fvvbi3hy5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "208: As You Etch on the Inner Window of Your Eye",
+          url: "https://buzzheavier.com/cpxthnp8xh3g",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "209: Blurred With Tears and Suffering Beyond Hope",
+          url: "https://buzzheavier.com/do3z3qil3934",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "210: Like a Wall in Which an Insect Lives and Gnaws",
+          url: "https://buzzheavier.com/75lce6mvnbhy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "211: With Muffled Sound Obliterating Everything",
+          url: "https://buzzheavier.com/6g5dasmowblz",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "212: You Went to Meet the Shell's Embrace of Fire",
+          url: "https://buzzheavier.com/3b55lavmecoz",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "213: Studying the Building From the Changing Angle",
+          url: "https://buzzheavier.com/89s37kx34tl9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "214: Modern Man Is Helpless When Confronted With Death",
+          url: "https://buzzheavier.com/0db7k5makcju",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "215: And the Bones and the Sinews Were Polished by the Wear",
+          url: "https://buzzheavier.com/quv4ejw6csvc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "216: Peripatetics and Epicureans Held Very Varying Views",
+          url: "https://buzzheavier.com/1792e7yfnw0t",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "217: The Mongols Were Pagan, Neither Moslem Nor Christian",
+          url: "https://buzzheavier.com/x6dp04a0rie1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "218: Apparent Uncertainty Among National Security Experts",
+          url: "https://buzzheavier.com/bieikifyxs3v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "219: Swift Glances of Caution at the Hurrying Pedestrians",
+          url: "https://buzzheavier.com/h4bjwb7u4b9u",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "220: Advantages of Making Regular Use of Cleansing Products",
+          url: "https://buzzheavier.com/bi79boic14sl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "221: The Usual Manifestations of Suspicion Were Heightened",
+          url: "https://buzzheavier.com/l9z596h7jbeb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "222: What Strikes the Oyster Shell Does Not Damage the Pearl",
+          url: "https://buzzheavier.com/ppfj5557g4ar",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "223: There Is More Passing in Their Minds Than We Are Aware Of",
+          url: "https://buzzheavier.com/sbtp20pfo8et",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "224: A Strife of Interests Masquerading as a Contest of Principles",
+          url: "https://buzzheavier.com/lrwr2ra1jmtj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "225: When Hostilities Shall Cease on the Part of the Aggressors",
+          url: "https://buzzheavier.com/wz8wact5jdje",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "226: Stationary If All Statistics Are Invariant Under a Shift in Time",
+          url: "https://buzzheavier.com/zcs4zcxg79gr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "227: Szeretlek, te mocskos kis kurva!",
+          url: "https://buzzheavier.com/t749wls23vmg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "228: Above the Poor Neglected Graves",
+          url: "https://buzzheavier.com/moqer26mk5k0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "229: I Brought a Heart Into the Room",
+          url: "https://buzzheavier.com/vv7rn8s8r5v5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "230: From the Garden of the Sun",
+          url: "https://buzzheavier.com/aqvixjkc41uo",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "231: Three Hundred Winters",
+          url: "https://buzzheavier.com/2v9irmau5lfr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "232: At the Tide's Edge, I Lie",
+          url: "https://buzzheavier.com/9i2uubb5yfwi",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "233: Plucked for the Breast of the Dead",
+          url: "https://buzzheavier.com/et9n4fnfqzbv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "234: And I Talk to Them in My Secret Mind",
+          url: "https://buzzheavier.com/xjwcqvo170ga",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "235: In the Conscious Sea, Roused and Prolonged",
+          url: "https://buzzheavier.com/je80hghol3y3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "236: Pitiless Light Over the Stony Landscape",
+          url: "https://buzzheavier.com/ivl2p48dza1m",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "237: Disordered Before the Naked Picture of Despair",
+          url: "https://buzzheavier.com/nwo1odo399kb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "238: 2",
+          url: "https://buzzheavier.com/mfb0thwno3yj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "239: lcm(2,3)",
+          url: "https://buzzheavier.com/060dtylujjb3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "240: lcm(2,3,5)",
+          url: "https://buzzheavier.com/rzipnitcycez",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "241: lcm(2,3,5,7)",
+          url: "https://buzzheavier.com/jewfgh7sfx3z",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "242: lcm(2,3,5,7,11)",
+          url: "https://buzzheavier.com/jpii3fk0x7l8",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "243: lcm(2,3,5,7,11,13)",
+          url: "https://buzzheavier.com/mv293grkyg5k",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "244: lcm(2,3,5,7,11,13,17)",
+          url: "https://buzzheavier.com/h5ovh4occs5e",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "245: lcm(2,3,5,7,11,13,17,19)",
+          url: "https://buzzheavier.com/f2baz6jfodw9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "246: lcm(2,3,5,7,11,13,17,19,23)",
+          url: "https://buzzheavier.com/t79f1r1zr44c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "247: lcm(2,3,5,7,11,13,17,19,23,29)",
+          url: "https://buzzheavier.com/0east000okpw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "248: lcm(2,3,5,7,11,13,17,19,23,29,31)",
+          url: "https://buzzheavier.com/wiz5pqnqffvs",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "249: lcm(2,3,5,7,11,13,17,19,23,29,31,37)",
+          url: "https://buzzheavier.com/8tifmrsm27gb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "250: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41)",
+          url: "https://buzzheavier.com/vj76fbd0cmm4",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "251: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43)",
+          url: "https://buzzheavier.com/bqd3d3fwbla6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "252: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47)",
+          url: "https://buzzheavier.com/jeat2bliy1kx",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "253: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53)",
+          url: "https://buzzheavier.com/wch5ls7xpeko",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "254: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59)",
+          url: "https://buzzheavier.com/9dfmt0m6gyho",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "255: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61)",
+          url: "https://buzzheavier.com/t7025fetv83b",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "256: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67)",
+          url: "https://buzzheavier.com/lu45kurakqh1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "257: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71)",
+          url: "https://buzzheavier.com/6kr4484s13my",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "258: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73)",
+          url: "https://buzzheavier.com/zidb0s9c3ybl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "259: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79)",
+          url: "https://buzzheavier.com/0pyk015awteo",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "260: lcm(2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83)",
+          url: "https://buzzheavier.com/q4przva1trb1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "261: A Feeling for the Order Lying Behind the Appearance",
+          url: "https://buzzheavier.com/30slex8ppatk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "262: The Insistence on Small Miracles",
+          url: "https://buzzheavier.com/xyvlh038y4iu",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "263: Internet Handle for a Thirteen Year Old Girl",
+          url: "https://buzzheavier.com/x4jx0p0j0amx",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "264: The Sun Itself Sees Not Till Heaven Clears",
+          url: "https://buzzheavier.com/mxy4gbxelkkz",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "265: Interpret the World According to Certain Patterns",
+          url: "https://buzzheavier.com/7um56eqjfqyr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "266: An Incestuous Act That God Committed Upon Reality",
+          url: "https://buzzheavier.com/cc114mo9jtzt",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "267: We Shall Draw From the Heart of Suffering",
+          url: "https://buzzheavier.com/157ousv8f1r2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "268: Persist Without Solace, Without Illusion",
+          url: "https://buzzheavier.com/oz4e5yevqru5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "269: Have the Gates of Death Been Opened Unto Thee?",
+          url: "https://buzzheavier.com/gjdzhgbf4zo4",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "270: Hast Thou Seen the Doors of the Shadow of Death?",
+          url: "https://buzzheavier.com/38zkak0fd8ip",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "271: An Itemized Account of the American Failure",
+          url: "https://buzzheavier.com/zh8snfthjt98",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "272: O Pleasing Death Come With Your Terrible Hands",
+          url: "https://buzzheavier.com/tbn78b0fucf0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "273: Whispering to Myself Delicious, Terrible Things",
+          url: "https://buzzheavier.com/qgbgzcnjlhbb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "274: Their Cow Calveth, and Casteth Not Her Calf",
+          url: "https://buzzheavier.com/yc9nwo4dx4i8",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "275: The Snow and the Little Wood Under the Blue Sky",
+          url: "https://buzzheavier.com/yay65ahw7ov0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "276: In My Old Griefs, and With My Childhood's Faith",
+          url: "https://buzzheavier.com/r2wwq7meqi0c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "277: The Nerve Center of Wisdom and the Knower",
+          url: "https://buzzheavier.com/oydvq5ym0i5h",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "278: Because of the Emptiness of the Heart",
+          url: "https://buzzheavier.com/ngwp19wa6o3w",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "279: Full of Craters and Frozen Lights",
+          url: "https://buzzheavier.com/iq5q4etcfodm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "280: You Were Shown a Diagram",
+          url: "https://buzzheavier.com/3wg9o2ob1q7h",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "281: Heroes, Heroines, Celestial Warriors",
+          url: "https://buzzheavier.com/yp27enee8jvc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "282: One Continuous Stream of Vibrations",
+          url: "https://buzzheavier.com/z3dl7kd98osd",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "283: The Blood Beneath My Skin",
+          url: "https://buzzheavier.com/42e9q838rtk7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "284: One Hour of Fire, and Let All Be Ended!",
+          url: "https://buzzheavier.com/ohlg5c57zen7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "285: A Violet Breath",
+          url: "https://buzzheavier.com/am810v3j4z4j",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "286: 0",
+          url: "https://buzzheavier.com/70nuq38ym19c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "287: n",
+          url: "https://buzzheavier.com/oy470aemb59c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "288: Four Years Ago? Opium.",
+          url: "https://buzzheavier.com/mg4qkuux068v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "289: CALCULOR",
+          url: "https://buzzheavier.com/y6lzq0zxen6m",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "290: Two-Legged Tigers and Crocodiles",
+          url: "https://buzzheavier.com/qczosguxydr2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "291: Reduction to Elementary Particles and Radiation",
+          url: "https://buzzheavier.com/yoocbyjn5989",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "292: Human Dignity in Times of Great Suffering and Loss",
+          url: "https://buzzheavier.com/mbhpozr17fkd",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "293: The Ruin and Absence of the World",
+          url: "https://buzzheavier.com/sucewn5y786x",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "294: Driven by the Warmth and Force of the Imagination",
+          url: "https://buzzheavier.com/f5jlmqr6ccea",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "295: Reduced to a Square of Planed Wood",
+          url: "https://buzzheavier.com/taagyafm5ocr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "296: Down the Polished Edge of the Dead Man's Desk",
+          url: "https://buzzheavier.com/42wpgbo96kz7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "297: I Cut the Liver Out of a Drifter",
+          url: "https://buzzheavier.com/4lucf43dqugy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "298: Your Fault Deserveth, I May Pierce Ye",
+          url: "https://buzzheavier.com/m3mlx69umuzi",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "299: Self-Traitor, I Do Bring the Spider Love",
+          url: "https://buzzheavier.com/wajfh73f3ada",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "300: Songs for Girls",
+          url: "https://buzzheavier.com/towoltaitfe7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "301: Weed Problem II - V",
+          url: "https://buzzheavier.com/cvsjp2gvlhrb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "302: It Is Part of Space and Time",
+          url: "https://buzzheavier.com/ge1w8wz4ie1p",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "303: n(k)",
+          url: "https://buzzheavier.com/ycnonxm26qve",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "304: 0(2^18×5^18)",
+          url: "https://buzzheavier.com/8yfrhf3yfr6l",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "305: Hostages Are Human Beings",
+          url: "https://buzzheavier.com/vuay4lsazbgy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "306: It Is Not a Lack of Love",
+          url: "https://buzzheavier.com/w79pf6pnv2yw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "307: x0(2^18×5^18)p",
+          url: "https://buzzheavier.com/1wu9ndy139cm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "308: Px0(2^18×5^18)p*k",
+          url: "https://buzzheavier.com/sxqdp0h1wpya",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "309: ΣPx0(2^18×5^18)p*k*k",
+          url: "https://buzzheavier.com/up07t8llo562",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "310: ΩΣPx0(2^18×5^18)p*k*k*k",
+          url: "https://buzzheavier.com/wp0bpy010050",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "311: Night's Great Perimeter",
+          url: "https://buzzheavier.com/cnla08fbfoj9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "312: The Shadow of a Fleeting Dream",
+          url: "https://buzzheavier.com/96q3ugptppvk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "313: In the Lining of Your Skin",
+          url: "https://buzzheavier.com/r2zxbohi8c24",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "314: Saints and Angels and Martyrs and Holy Men",
+          url: "https://buzzheavier.com/kkm66duu50uk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "315: In Walked Orson",
+          url: "https://buzzheavier.com/vxplnzsvlfro",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "316: Near the Trout Hatchery at iDEATH",
+          url: "https://buzzheavier.com/6wa55e1j7vg8",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "317: My Concerns Are Global",
+          url: "https://buzzheavier.com/ebll05act2gv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "318: Where the Dead Men Lost Their Bones",
+          url: "https://buzzheavier.com/lap603hqqa1n",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "319: The Person Witness",
+          url: "https://buzzheavier.com/7vl355ahi5ud",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "320: Following the Sand",
+          url: "https://buzzheavier.com/z7ep9qxwc93f",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "321: Burn Dark Sincere Receiver",
+          url: "https://buzzheavier.com/f40x5httb397",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "322: Scoundrel, Rogue, Monster",
+          url: "https://buzzheavier.com/fgd0h262ka8t",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "323: Killing, Dressing, Preparing Their Own Oxen and Swine",
+          url: "https://buzzheavier.com/pj53ksys7jy9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "324: To Sit on the Night of Sadness",
+          url: "https://buzzheavier.com/1ts8a4eyft5q",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "325: I Sent Myself to the Law",
+          url: "https://buzzheavier.com/gvryg94ad4m1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "326: I Hope You Feel the Hopelessness",
+          url: "https://buzzheavier.com/r15r0hjwq90y",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "327: Elementary Machine Life",
+          url: "https://buzzheavier.com/v34qrlgp6eni",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "328: In Your Soft Authority",
+          url: "https://buzzheavier.com/wgtruq0r6foe",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "329: She Is as the Nights Are Horrible, Pt. 1",
+          url: "https://buzzheavier.com/5t30aabl6qce",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "330: She Is as the Nights Are Horrible, Pt. 2",
+          url: "https://buzzheavier.com/e3vmro7jelne",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "331: A Ghost Prehistoric, Pt. 1",
+          url: "https://buzzheavier.com/f8l3ihvvkuuc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "332: A Ghost Prehistoric, Pt. 2",
+          url: "https://buzzheavier.com/07q2w3a155gr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "333: Of Course, the Personality Is Gone",
+          url: "https://buzzheavier.com/m2em49oxdk9h",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "334: It Is the Parabola",
+          url: "https://buzzheavier.com/lc1y78stu0ll",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "335: You Can't Buy Shoes in a Painting",
+          url: "https://buzzheavier.com/wqrmchng5ry5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "336: Lorne Greene's Belgian Woodchuck Orgy",
+          url: "https://buzzheavier.com/9ftcw81rapmc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "337: On Her Lips a Poison",
+          url: "https://buzzheavier.com/pjzaj488bn74",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "338: Good Night, Sweet Prince, Vol. 1",
+          url: "https://buzzheavier.com/qwp6qyorx591",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "339: Good Night, Sweet Prince, Vol. 2",
+          url: "https://buzzheavier.com/is59ttpcaw9l",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "340: Good Night, Sweet Prince, Vol. 3",
+          url: "https://buzzheavier.com/ro7vtxnb8xkx",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "341: Good Night, Sweet Prince, Vol. 4",
+          url: "https://buzzheavier.com/lp98j87h8cth",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "342: Good Night, Sweet Prince, Vol. 5",
+          url: "https://buzzheavier.com/juzbk4e39y4x",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "343: Virtue's Light, That Beams Beyond the Spheres",
+          url: "https://buzzheavier.com/19kkza6aok45",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "344: I Will Climb Alone",
+          url: "https://buzzheavier.com/5zlo6kyl1r8o",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "345: Moog Variations, Vol. 1",
+          url: "https://buzzheavier.com/ammgrz9frlv2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "346: Moog Variations, Vol. 2",
+          url: "https://buzzheavier.com/v7bbtkvyla3w",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "347: Moog Variations, Vol. 3",
+          url: "https://buzzheavier.com/fy74fezncfq4",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "348: Moog Variations, Vol. 4",
+          url: "https://buzzheavier.com/cyehue0tzmgn",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "349: Moog Variations, Vol. 5",
+          url: "https://buzzheavier.com/4bvi9j4u5fr7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "350: Moog Variations, Vol. 6",
+          url: "https://buzzheavier.com/073dlo8gayls",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "351: Total Bliss",
+          url: "https://buzzheavier.com/881mflyilg5q",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "352: Future Available Pamphlet",
+          url: "https://buzzheavier.com/1k5dkk6pn1um",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "353: To Fill the Mouth of Their Monster",
+          url: "https://buzzheavier.com/mllwggyvesol",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Lemniscate 1",
+          url: "https://buzzheavier.com/ruw2025er9dc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Z.",
+          url: "https://buzzheavier.com/xrqykm53gkox",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+{
+  category: "NuBoh",
+  description: "Downloaded from Qobuz where available, else downloaded from Amazon Music",
+  links: [
+        {
+          title: "19 nervous breakdowns (I'm about to have)",
+          url: "https://buzzheavier.com/kogolunqrx7o",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Appear / Not Appear",
+          url: "https://buzzheavier.com/iwtpqta5zahl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "A Standard Smile",
+          url: "https://buzzheavier.com/6cvlo0urwgio",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "A Thoughtless Gift",
+          url: "https://buzzheavier.com/m7knrttpget5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "A Way to Let it All Go",
+          url: "https://buzzheavier.com/ympux22evyi7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Be Friendly Unto Me",
+          url: "https://buzzheavier.com/pedcphbq10iq",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Bloom",
+          url: "https://buzzheavier.com/nqmxnu4pnwtf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Burn",
+          url: "https://buzzheavier.com/3fz9qmt0qrny",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Distant Spring",
+          url: "https://buzzheavier.com/zcuw0hb58atw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "down and back",
+          url: "https://buzzheavier.com/mvvj9j6c6u5k",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Driftwood and Bone",
+          url: "https://buzzheavier.com/17fcmn7e55jy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Fight Night for the Ghosts of Heaven",
+          url: "https://buzzheavier.com/u6it9hc2fx2v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Folded Hands",
+          url: "https://buzzheavier.com/gwbh09ja1v3k",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Fragments of the Night",
+          url: "https://buzzheavier.com/eggx223ql8a1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Green Glass Box",
+          url: "https://buzzheavier.com/t8gblg49fp2o",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Half of a Two Headed Creature",
+          url: "https://buzzheavier.com/iootpqpzgyid",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "He Shall Have It",
+          url: "https://buzzheavier.com/swczudqduylj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Hidden Signs / Secret Meanings",
+          url: "https://buzzheavier.com/x1hjmbgm0lb9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Howling",
+          url: "https://buzzheavier.com/o3jxkvlsxqwb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "I Have Heard Him Say These Things",
+          url: "https://buzzheavier.com/15sptziy7b4c",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Ignite the Blood",
+          url: "https://buzzheavier.com/5h12vhlk30kj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "In the House of Dust",
+          url: "https://buzzheavier.com/a3znl16gxtoy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "In the Likeness of Oak",
+          url: "https://buzzheavier.com/jj3ngleh9v3v",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "In the Long Ago",
+          url: "https://buzzheavier.com/gkthavv249tr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Invisible at Will",
+          url: "https://buzzheavier.com/sqfwzqjtycx1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "It Can't Be Just You Who Eats",
+          url: "https://buzzheavier.com/wex2f6a5nrn0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "It Is Not Nothing",
+          url: "https://buzzheavier.com/encxsbocdjak",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "It's Jaws and Humming, Like Dancing, Like Glass",
+          url: "https://buzzheavier.com/3cthokhycksf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "It Was as You Said",
+          url: "https://buzzheavier.com/p3vcxo69rxhj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Memories Misremembered",
+          url: "https://buzzheavier.com/sqkiyi6cwmpk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Murmuring Endearments",
+          url: "https://buzzheavier.com/1stt2jzbs4co",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Nice Shirt",
+          url: "https://buzzheavier.com/ya8gz18mjkke",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "On the Wrong Way",
+          url: "https://buzzheavier.com/yx9fh9lb4cr2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Phantom on Your Shoulder",
+          url: "https://buzzheavier.com/18360qjzszht",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Quest for the Fountain of Apologies",
+          url: "https://buzzheavier.com/agyb7aczfvmf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "say it again",
+          url: "https://buzzheavier.com/yx4a66npch2j",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Slightly Artificial",
+          url: "https://buzzheavier.com/src2h2mj8uf2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Speak to Me Wordlessly",
+          url: "https://buzzheavier.com/q9fe9uf360gb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Such as Is Not",
+          url: "https://buzzheavier.com/sw7y0kouz2aa",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "The Computer May Disagree",
+          url: "https://buzzheavier.com/89w1ilcgzoi3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "The Deathless Element",
+          url: "https://buzzheavier.com/zo7gcbmnybgm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "The Dreadful Winds",
+          url: "https://buzzheavier.com/07yl0e2akc0l",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "The Living Wind",
+          url: "https://buzzheavier.com/yr1q8r3l6dfc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "The Sleeper's Mind",
+          url: "https://buzzheavier.com/tucjenfrpic5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "The Undifferentiated Waters",
+          url: "https://buzzheavier.com/joebmzzbx5g1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Things That Are Lost",
+          url: "https://buzzheavier.com/tdjgkd3wx16m",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Turn Pretty Flower Towards the Sun",
+          url: "https://buzzheavier.com/5c5cu9705u11",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Whose Eyes Are Brightness",
+          url: "https://buzzheavier.com/s98krnt9kcd2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Who Will Watch Over Me",
+          url: "https://buzzheavier.com/vygr326hky59",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+{
+  category: "Roman Numerals",
+  links: [
+        {
+          title: "I",
+          url: "https://buzzheavier.com/538a7nxmf6me",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "II",
+          url: "https://buzzheavier.com/pdfbqpx6h8ey",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "III",
+          url: "https://buzzheavier.com/fsf9vvzq44bb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "IV",
+          url: "https://buzzheavier.com/aznpzelmcrcb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "V",
+          url: "https://buzzheavier.com/iybehrgqnwty",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "VI",
+          url: "https://buzzheavier.com/seq7pu97rh4h",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "VII",
+          url: "https://buzzheavier.com/9pcyn2t5z45h",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "VIII",
+          url: "https://buzzheavier.com/5tu1my1e6mxl",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "IX",
+          url: "https://buzzheavier.com/us637iit5kec",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "X",
+          url: "https://buzzheavier.com/uao6uw5xz9xm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XI",
+          url: "https://buzzheavier.com/5tubx6daeqp8",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XII",
+          url: "https://buzzheavier.com/9p2c19vkxwpg",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XIII",
+          url: "https://buzzheavier.com/rt6t2vwc2841",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XIV",
+          url: "https://buzzheavier.com/zqqvf5udiuyo",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XV",
+          url: "https://buzzheavier.com/6ylhtadgu420",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XVI",
+          url: "https://buzzheavier.com/68sn6uygwixf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XVII",
+          url: "https://buzzheavier.com/mne3wg78nqew",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XVIII",
+          url: "https://buzzheavier.com/es94h8geumws",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XIX",
+          url: "https://buzzheavier.com/tdtjdbqn5xpe",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XX",
+          url: "https://buzzheavier.com/suloy4utiw10",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXI",
+          url: "https://buzzheavier.com/rchhs7sizhz7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXII",
+          url: "https://buzzheavier.com/u3dj1evpz95i",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXIII",
+          url: "https://buzzheavier.com/v2jts52grf78",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXIV",
+          url: "https://buzzheavier.com/0oavl0wxvaku",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXV",
+          url: "https://buzzheavier.com/bg96vlbx70iw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXVI",
+          url: "https://buzzheavier.com/afouwu79w0jp",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXVII",
+          url: "https://buzzheavier.com/67mc3jeh5n36",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXVIII",
+          url: "https://buzzheavier.com/bgvswtbklnqv",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXIX",
+          url: "https://buzzheavier.com/y3izy8s378ur",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXX",
+          url: "https://buzzheavier.com/ptgidtvejyhy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXI",
+          url: "https://buzzheavier.com/y09n72z5so4g",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXII",
+          url: "https://buzzheavier.com/dcgcq5wt39y8",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXIII",
+          url: "https://buzzheavier.com/fob9q89h1fix",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXIV",
+          url: "https://buzzheavier.com/e4by2hh2q6fz",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXV",
+          url: "https://buzzheavier.com/mren1561zjpr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXVI",
+          url: "https://buzzheavier.com/r35pe05xuyhb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXVII",
+          url: "https://buzzheavier.com/y6mydl33e1ez",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXVIII",
+          url: "https://buzzheavier.com/gk3mfnnfpqq2",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XXXIX",
+          url: "https://buzzheavier.com/o7ahgt8lgl7o",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XL",
+          url: "https://buzzheavier.com/njr0sxjq9g0y",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLI",
+          url: "https://buzzheavier.com/43xwxevgsd2i",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLII",
+          url: "https://buzzheavier.com/yzawlakp0cst",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLIII",
+          url: "https://buzzheavier.com/ggs9pbqpsia3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLIV",
+          url: "https://buzzheavier.com/x6ifwzfmzbo3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLV",
+          url: "https://buzzheavier.com/zl8bmkmc4ojj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLVI",
+          url: "https://buzzheavier.com/9gvadzwfku6g",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLVII",
+          url: "https://buzzheavier.com/r4z9gahtsr9a",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLVIII",
+          url: "https://buzzheavier.com/02oahbbg3bwh",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XLIX",
+          url: "https://buzzheavier.com/jwqg3gfmvrre",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "L",
+          url: "https://buzzheavier.com/ifhgkufpauii",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LI",
+          url: "https://buzzheavier.com/b5tviykkafsf",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LII",
+          url: "https://buzzheavier.com/2mrf5xltcbx7",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LIII",
+          url: "https://buzzheavier.com/d0xqfpjbubrc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LIV",
+          url: "https://buzzheavier.com/h3x6sjsm58y9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LV",
+          url: "https://buzzheavier.com/a5wdmnmw7gnh",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LVI",
+          url: "https://buzzheavier.com/xnfk9w281ve1",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LVII",
+          url: "https://buzzheavier.com/kef3eftnsosr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LVIII",
+          url: "https://buzzheavier.com/cqwu0tolphzk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LIX",
+          url: "https://buzzheavier.com/ml1n3yc9kppb",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LX",
+          url: "https://buzzheavier.com/zvzkpkiq3v0q",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXI",
+          url: "https://buzzheavier.com/6qpoaav4mtnw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXII",
+          url: "https://buzzheavier.com/4hiuer3vao0b",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXIII",
+          url: "https://buzzheavier.com/cqk5o4jdmh3p",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXIV",
+          url: "https://buzzheavier.com/vcczzr587c55",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXV",
+          url: "https://buzzheavier.com/ly8m45v5vthr",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXVI",
+          url: "https://buzzheavier.com/wpgidukn6qqk",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXVII",
+          url: "https://buzzheavier.com/figtxcoxzzj9",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXVIII",
+          url: "https://buzzheavier.com/z6uw6xw4qb0t",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXIX",
+          url: "https://buzzheavier.com/fy3tnlgi1ye3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXX",
+          url: "https://buzzheavier.com/tcldnmyzwvqn",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXI",
+          url: "https://buzzheavier.com/50yarpl3r00d",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXII",
+          url: "https://buzzheavier.com/ye8epmjxaizw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXIII",
+          url: "https://buzzheavier.com/ydd0w1o7hzvy",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXIV",
+          url: "https://buzzheavier.com/5l723v4ci69o",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXV",
+          url: "https://buzzheavier.com/fm0w1vqs58vw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXVI",
+          url: "https://buzzheavier.com/xq6s3yqnb9o4",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXVII",
+          url: "https://buzzheavier.com/rb18bsgjllog",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXVIII",
+          url: "https://buzzheavier.com/5cq6vxzndpwd",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXIX",
+          url: "https://buzzheavier.com/1tkq0uf3qaxp",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXX",
+          url: "https://buzzheavier.com/u9r9rjefn2a6",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXI",
+          url: "https://buzzheavier.com/9ghfox04ratw",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXII",
+          url: "https://buzzheavier.com/w3j40qd6v2xe",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXIII",
+          url: "https://buzzheavier.com/ssg2xrb6gr0b",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXIV",
+          url: "https://buzzheavier.com/262vswddl96f",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXV",
+          url: "https://buzzheavier.com/c687rd07nc63",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXVI",
+          url: "https://buzzheavier.com/37tdqnfojrda",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXVII",
+          url: "https://buzzheavier.com/2uyi0wk6m709",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXVIII",
+          url: "https://buzzheavier.com/fbym9gfr5ben",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "LXXXIX",
+          url: "https://buzzheavier.com/e2izfoe8tz65",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XC",
+          url: "https://buzzheavier.com/pr6nn0pk7ki0",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCI",
+          url: "https://buzzheavier.com/i0s0yva1rhhq",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCII",
+          url: "https://buzzheavier.com/y8ebmegp79r3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCIII",
+          url: "https://buzzheavier.com/ycrxea41gmum",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCIV",
+          url: "https://buzzheavier.com/kfgm8j1t4glt",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCV",
+          url: "https://buzzheavier.com/sdiqfmjbbc97",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCVI",
+          url: "https://buzzheavier.com/lyvp56wqg5r3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCVII",
+          url: "https://buzzheavier.com/u2snq8snicle",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCVIII",
+          url: "https://buzzheavier.com/81c4rq1otebj",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "XCIX",
+          url: "https://buzzheavier.com/msm5pe379cmc",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "C",
+          url: "https://buzzheavier.com/ykqvfgs25n4v",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+{
+  category: "Untitled Series",
+  links: [
+        {
+          title: "Untitled 1",
+          url: "https://buzzheavier.com/phlk6v13oghm",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 2",
+          url: "https://buzzheavier.com/9wwcotijs617",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 3",
+          url: "https://buzzheavier.com/8wyzfoakqhle",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 4",
+          url: "https://buzzheavier.com/lw0xb9zc1zne",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 5",
+          url: "https://buzzheavier.com/vbszxmleyrcq",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 6",
+          url: "https://buzzheavier.com/qektpxmd67d3",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 7",
+          url: "https://buzzheavier.com/q8p2mj2ln66u",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 8",
+          url: "https://buzzheavier.com/dk4sxfnvwh1a",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 9",
+          url: "https://buzzheavier.com/v24miyeohej5",
+          description: "",
+          tags: ["buzzheavier"]
+        },
+        {
+          title: "Untitled 10",
+          url: "https://buzzheavier.com/t48a78dmm2e0",
+          description: "",
+          tags: ["buzzheavier"]
+        }
+  ]
+},
+];
+        function normalize(str) {
+            return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\-\_\,\.\;]+/g, ''); // Remove spaces, hyphens, underscores, punctuation
+        }
+
+
+        // Slugify function for creating valid IDs
+        function slugify(text) {
+            return text.toString().toLowerCase()
+                .replace(/\s+/g, '-')       // Replace spaces with -
+                .replace(/[^\w-]+/g, '')   // Remove all non-word chars
+                .replace(/--+/g, '-')      // Replace multiple - with single -
+                .replace(/^-+/, '')        // Trim - from start of text
+                .replace(/-+$/, '');       // Trim - from end of text
+        }
+
+        // Render links function
+        function renderLinks(filteredData = linksData) {
+            const container = document.getElementById('linksContainer');
+            container.innerHTML = '';
+
+            filteredData.forEach(category => {
+                const categoryId = slugify(category.category); // Create a URL-friendly ID
+                const categoryHTML = `
+                    <div class="category-section" id="${categoryId}"> <!-- Add ID here -->
+                        <h2 class="category-title">${category.category}
+                          ${category.description ? `<span class="category-description">${category.description}</span>` : ''}
+                        </h2>
+                        <div class="links-grid">
+                            ${category.links.map(link => `
+                                <div class="link-card">
+                                    <a href="${link.url}" target="_blank" class="link-title">${link.title}</a>
+                                    <p class="link-description">${link.description}</p>
+                                    <div class="link-tags">
+                                        ${link.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += categoryHTML;
+            });
+
+            // Add event listeners to category titles
+            document.querySelectorAll('.category-title').forEach(title => {
+                title.addEventListener('click', () => {
+                    const linksGrid = title.nextElementSibling;
+                    linksGrid.classList.toggle('collapsed');
+                    title.classList.toggle('collapsed');
+                });
+            });
+        }
+
+        // Handle hash navigation
+        function handleHash() {
+            const hash = window.location.hash.substring(1); // Remove the '#' from the hash
+            if (hash) {
+                const element = document.getElementById(hash); // Find the element with the matching ID
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Scroll to the element
+                }
+            }
+        }
+
+                // Collapse All functionality
+                document.getElementById('collapseAllBtn').addEventListener('click', () => {
+            const allTitles = document.querySelectorAll('.category-title');
+            const allGrids = document.querySelectorAll('.links-grid');
+            const isCollapsed = allTitles[0]?.classList.contains('collapsed');
+
+            allTitles.forEach(title => {
+                if (!isCollapsed) {
+                    title.classList.add('collapsed');
+                } else {
+                    title.classList.remove('collapsed');
+                }
+            });
+
+            allGrids.forEach(grid => {
+                if (!isCollapsed) {
+                    grid.classList.add('collapsed');
+                } else {
+                    grid.classList.remove('collapsed');
+                }
+            });
+
+            // Update button text
+            const btn = document.getElementById('collapseAllBtn');
+            btn.textContent = isCollapsed ? 'Collapse All' : 'Expand All';
+        });
+
+        // Initial render and hash handling
+        renderLinks();
+        handleHash(); // Handle hash on page load
+        window.addEventListener('hashchange', handleHash); // Handle hash changes
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = normalize(e.target.value);
+            const filteredData = linksData.map(category => {
+                const categoryMatches = normalize(category.category).includes(searchTerm);
+                return {
+                    ...category,
+                    links: categoryMatches 
+                        ? category.links 
+                        : category.links.filter(link =>
+                            normalize(link.title).includes(searchTerm) ||
+                            normalize(link.description).includes(searchTerm) ||
+                            link.tags.some(tag => normalize(tag).includes(searchTerm))
+                        )
+                };
+            }).filter(category => category.links.length > 0);
+            
+            renderLinks(filteredData);
+        });
+
+    // Update category counter
+    function updateCategoryCounter() {
+        document.getElementById('categoryCount').textContent = linksData.length;
+    }        
+
+        // Initial render
+        renderLinks();
+      
+    // Call this after initial render
+    updateCategoryCounter();    
+    </script>
+
+<div class="warning-message">
+  ⚠️ Thanks to buzzheaver for providing the storage for this archive.
+</div>
+
+<!-- Home Button -->
+<a href="https://jcomicstampa.github.io/some-utils/" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+<style>
+.home-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-decoration: none;
+    color: #0051ff;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: #2563eb;
+    color: white;
+}
+
+.home-button:active {
+    transform: scale(0.95);
+}
+</style>
+
+</body>
+</html>

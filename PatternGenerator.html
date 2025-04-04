@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pattern Generator</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: #151515;
+            --primary-color: #7c4dff;
+            --secondary-color: #00e676;
+            --text-primary: #ffffff;
+            --text-secondary: #888;
+            --error-color: #ff5252;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+        }
+
+        .container {
+            display: grid;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .panel {
+            background: var(--surface-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        input {
+            background: #111;
+            border: 1px solid #333;
+            color: var(--text-primary);
+            padding: 12px;
+            border-radius: 8px;
+            width: 100%;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        button.secondary {
+            background-color: var(--secondary-color);
+        }
+
+        .preview-container {
+            max-width: 512px;
+            max-height: 512px;
+            margin: 1rem auto;
+            position: relative;
+            background: var(--bg-color);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .download-btn {
+            margin-top: 1rem;
+            display: none;
+            width: 100%;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="panel">
+            <h1>Pattern Generator</h1>
+            <div class="controls">
+                <div class="input-group">
+                    <label for="imageSize">Image Size (pixels)</label>
+                    <input type="number" id="imageSize" placeholder="Min 256" min="256" value="512">
+                </div>
+                <div class="input-group">
+                    <label for="tileSize">Tile Size (pixels)</label>
+                    <input type="number" id="tileSize" placeholder="Approximate size" value="64">
+                </div>
+                <div class="input-group">
+                    <label for="colorCount">Color Count (0=random)</label>
+                    <input type="number" id="colorCount" placeholder="Number of colors" value="8" min="0">
+                </div>
+                <button onclick="generatePattern()">Generate Pattern</button>
+            </div>
+            <div class="preview-container">
+                <canvas id="canvas"></canvas>
+            </div>
+            <button class="download-btn secondary" id="downloadBtn" onclick="downloadImage()">Download Image</button>
+        </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <script>
+        let currentImageSize = 512;
+
+        function findClosestDivisor(n, target) {
+            let divisors = [];
+            for (let i = 1; i <= Math.sqrt(n); i++) {
+                if (n % i === 0) {
+                    divisors.push(i);
+                    if (i !== n / i) divisors.push(n / i);
+                }
+            }
+            return divisors.reduce((a, b) => 
+                Math.abs(a - target) < Math.abs(b - target) ? a : b);
+        }
+
+        function generateIrregularShape(tileSize) {
+            const points = [];
+            const numPoints = 5 + Math.floor(Math.random() * 4);
+            let x = Math.random() * tileSize;
+            let y = Math.random() * tileSize;
+            points.push({x, y});
+
+            for (let i = 0; i < numPoints - 1; i++) {
+                x = (x + (Math.random() - 0.5) * tileSize) % tileSize;
+                y = (y + (Math.random() - 0.5) * tileSize) % tileSize;
+                points.push({x, y});
+            }
+            return points;
+        }
+
+        function drawTile(ctx, tileSize, palette, usedColors) {
+            const elements = [
+                'rotatedSquare', 'diagonalStripe', 'interlockingCircles',
+                'trianglePattern', 'organicBlob', 'bezierCurve'
+            ];
+            
+            const elementCount = Math.min(palette.length, 3 + Math.floor(Math.random() * (palette.length - 2)));
+            
+            for (let i = 0; i < elementCount; i++) {
+                const elem = elements[Math.floor(Math.random() * elements.length)];
+                const color = palette[Math.floor(Math.random() * palette.length)];
+                usedColors.add(color);
+
+                const size = 8 + Math.random() * (tileSize/4 - 8);
+                
+                switch(elem) {
+                    case 'rotatedSquare':
+                        ctx.save();
+                        ctx.fillStyle = color;
+                        const squareSize = tileSize/4 + Math.random() * tileSize/4;
+                        ctx.translate(Math.random() * tileSize, Math.random() * tileSize);
+                        ctx.rotate(Math.random() * Math.PI);
+                        ctx.fillRect(-squareSize/2, -squareSize/2, squareSize, squareSize);
+                        ctx.restore();
+                        break;
+
+                    case 'diagonalStripe':
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = Math.max(1, tileSize/20);
+                        for (let j = -1; j <= 1; j++) {
+                            ctx.beginPath();
+                            ctx.moveTo(j * tileSize, 0);
+                            ctx.lineTo((j + 1) * tileSize, tileSize);
+                            ctx.stroke();
+                        }
+                        break;
+
+                    case 'interlockingCircles':
+                        ctx.strokeStyle = color;
+                        const circleSize = tileSize/6 + Math.random() * tileSize/6;
+                        [-1, 1].forEach(xMod => [-1, 1].forEach(yMod => {
+                            ctx.beginPath();
+                            ctx.arc(xMod * tileSize, yMod * tileSize, 
+                                    circleSize, 0, Math.PI * 2);
+                            ctx.stroke();
+                        }));
+                        break;
+
+                    case 'organicBlob':
+                        ctx.fillStyle = color;
+                        const points = generateIrregularShape(tileSize);
+                        ctx.beginPath();
+                        points.forEach((p, i) => 
+                            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y));
+                        ctx.closePath();
+                        ctx.fill();
+                        break;
+
+                    case 'bezierCurve':
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 2 + Math.random() * 3;
+                        ctx.beginPath();
+                        const p0 = [Math.random() * tileSize, Math.random() * tileSize];
+                        const p1 = [Math.random() * tileSize, Math.random() * tileSize];
+                        const p2 = [Math.random() * tileSize, Math.random() * tileSize];
+                        const p3 = [Math.random() * tileSize, Math.random() * tileSize];
+                        ctx.moveTo(...p0);
+                        ctx.bezierCurveTo(...p1, ...p2, ...p3);
+                        ctx.stroke();
+                        break;
+                }
+            }
+        }
+
+        function generatePattern() {
+            const imageSize = parseInt(document.getElementById('imageSize').value) || 512;
+            const targetTileSize = parseInt(document.getElementById('tileSize').value) || 64;
+            let colorCount = parseInt(document.getElementById('colorCount').value) || 0;
+            currentImageSize = imageSize;
+
+            if (imageSize < 256) return showStatus("❌ Image size must be ≥256", 'error-color');
+            
+            // Generate palette
+            if (colorCount === 0) colorCount = 5 + Math.floor(Math.random() * 8);
+            const palette = Array.from({length: colorCount}, () => 
+                `rgb(${Math.random()*255|0},${Math.random()*255|0},${Math.random()*255|0})`);
+
+            // Calculate tile size
+            const minTile = 64;
+            const maxTile = imageSize / 4;
+            const validTile = findClosestDivisor(imageSize, targetTileSize);
+            const finalTile = Math.max(minTile, Math.min(validTile, maxTile));
+
+            // Setup canvas
+            const canvas = document.getElementById('canvas');
+            canvas.width = canvas.height = imageSize;
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, imageSize, imageSize);
+
+            // Generate tiles
+            const numTiles = imageSize / finalTile;
+            const tileVariations = 4;
+            const usedColors = new Set();
+            const tiles = Array.from({length: tileVariations}, () => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = tempCanvas.height = finalTile;
+                drawTile(tempCanvas.getContext('2d'), finalTile, palette, usedColors);
+                return tempCanvas;
+            });
+
+            // Draw pattern
+            for (let x = 0; x < numTiles; x++) {
+                for (let y = 0; y < numTiles; y++) {
+                    const tileIndex = (x + y) % tileVariations;
+                    ctx.drawImage(tiles[tileIndex], x * finalTile, y * finalTile);
+                }
+            }
+
+            // Show download button
+            document.getElementById('downloadBtn').style.display = 'flex';
+            showStatus('🎨 Pattern generated!', 'secondary-color');
+        }
+
+        function downloadImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = currentImageSize;
+            canvas.height = currentImageSize;
+            const ctx = canvas.getContext('2d');
+            
+            // Redraw pattern at original size
+            const tempCanvas = document.getElementById('canvas');
+            ctx.drawImage(tempCanvas, 0, 0, currentImageSize, currentImageSize);
+            
+            const link = document.createElement('a');
+            link.download = `pattern_${currentImageSize}px_${Date.now()}.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+            showStatus('📥 Image downloaded!', 'secondary-color');
+        }
+
+        function showStatus(message, colorVar = 'primary-color') {
+            const status = document.getElementById('status');
+            status.style.color = `var(${colorVar})`;
+            status.textContent = message;
+            status.style.opacity = '1';
+            setTimeout(() => status.style.opacity = '0', 2000);
+        }
+    </script>
+</body>
+</html>

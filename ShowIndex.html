@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>show index</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --background-color: #f8fafc;
+            --text-color: #1e293b;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            line-height: 1.6;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            padding: 2rem 1rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .search-box {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        #searchInput:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .category-section {
+            margin: 2rem 0;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+        }
+
+        .category-title {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .category-description {
+            display: block;
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: normal;
+            margin-top: 0.25rem;
+        }
+
+        .category-title::after {
+            content: '▼';
+            font-size: 0.8rem;
+            transition: transform 0.3s ease;
+        }
+
+        .category-title.collapsed::after {
+            transform: rotate(-90deg); /* Rotate arrow when collapsed */
+        }
+
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+            transition: opacity 0.3s ease, max-height 0.3s ease;
+            overflow: hidden;
+        }
+
+        .links-grid.collapsed {
+            opacity: 0;
+            max-height: 0;
+        }
+
+        .link-card {
+            padding: 1rem;
+            border-radius: 8px;
+            background: #fff;
+            transition: transform 0.2s ease;
+            border: 1px solid #e2e8f0;
+        }
+
+        .link-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .link-title {
+            color: var(--primary-color);
+            text-decoration: none;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .link-description {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .link-tags {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .tag {
+            background: #e2e8f0;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+            
+            .category-section {
+                padding: 1rem;
+            }
+        }
+
+        .search-box {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        }
+
+        #collapseAllBtn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        #collapseAllBtn:hover {
+            background-color: #1d4ed8;
+        }
+
+        @media (max-width: 768px) {
+            .search-box {
+                flex-direction: column;
+            }
+            
+            #collapseAllBtn {
+                padding: 0.75rem 1rem;
+                width: 100%;
+            }
+        }
+
+        .category-counter {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background-color: var(--primary-color);
+        color: white;
+        padding: 0.35rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        z-index: 1000;
+        /* Small size and fixed positioning */
+    }
+
+        .warning-message {
+        color: #dc2626; /* Red-600 */
+        font-size: 0.9rem;
+        text-align: center;
+        padding: 1rem;
+        margin: 2rem 0;
+        border: 1px solid #fecaca; /* Red-100 */
+        border-radius: 8px;
+        background-color: #fef2f2; /* Red-50 */
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    </style>
+</head>
+
+
+<body>
+  <div class="category-counter">
+    Shows / Movies archived: <span id="categoryCount">0</span>
+  </div>
+    <div class="container">
+        <h1>show index</h1>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search links...">
+          <button id="collapseAllBtn">Collapse All</button>
+      </div>
+
+        <div id="linksContainer"></div>
+    </div>
+
+    <script>
+        // Link data structure
+        const linksData = [
+  {
+    category: "Adventure Time",
+    links: [
+      {
+        title: "Extras",
+        url: "https://buzzheavier.com/gsdonhm00pzl",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S00",
+        url: "https://buzzheavier.com/0dbn65ff1kav",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/s3yej4e83u5n",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/2bbk87zfltat",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/1juabxi8pfxl",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/g5cq88ihh3cn",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05 Part 1",
+        url: "https://buzzheavier.com/fiujanjoft9d",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05 Part 2",
+        url: "https://buzzheavier.com/toj7ldnktfi1",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S06",
+        url: "https://buzzheavier.com/jvpxj38ue1js",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S07",
+        url: "https://buzzheavier.com/rw3sbj2drkjx",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S08",
+        url: "https://buzzheavier.com/4v0liigv4jie",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S09",
+        url: "https://buzzheavier.com/00qfz4ji7o57",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S10",
+        url: "https://buzzheavier.com/op4k87td32tw",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Adventure Time: Distant Lands",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/cugxfa7uc45j",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Beavis and Butt-Head",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/ggk82touhlnx",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/fe974vu554ma",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/a1ukcrqazsnf",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/3aw5e14mff69",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05",
+        url: "https://buzzheavier.com/giy621iy2p1q",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S06",
+        url: "https://buzzheavier.com/vgcp9uledfqw",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S07",
+        url: "https://buzzheavier.com/dkqhtrmeygkl",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S08",
+        url: "https://buzzheavier.com/uab8a60m4235",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Ben 10",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/oew6cms0t0ln",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/r6a4nrz43fr2",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/nmlghr473tem",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/7as98dyg64tr",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "Extras",
+        url: "https://buzzheavier.com/lq34xrbk2kao",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Ben 10: Alien Force",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/uitmm7297dgy",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/zw9jm47uawqs",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/iji6t0ycbt5d",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Ben 10: Omniverse",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/8fuux3wi711y",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/ct1juxoxnaa3",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/towge40mbhic",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/ptuq0ybiq0a8",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05",
+        url: "https://buzzheavier.com/2tc3rwgnsvw2",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S06",
+        url: "https://buzzheavier.com/cjwt27n4oc5w",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S07",
+        url: "https://buzzheavier.com/rt3w8kzol72j",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S08",
+        url: "https://buzzheavier.com/bv79e99gq6yr",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Ben 10: Ultimate Alien",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/6l4lymnjki54",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/al91t92n3b4y",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Carol and The End of the World",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/9x6kxxquipjf",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Castlevania",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/yitprwlz71gw",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/imvsspr0d521",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/2c4urcw6r3lu",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/lrhyud9mq8kt",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Chapolin Colorado",
+    links: [
+      {
+        title: "001-017",
+        url: "https://buzzheavier.com/bko12z8o3qmx",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "018-034",
+        url: "https://buzzheavier.com/lmb9qp3uqthd",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "035-052",
+        url: "https://buzzheavier.com/cp9miadkg8ep",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "053-071",
+        url: "https://buzzheavier.com/ma51pfytl1hm",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "072-090",
+        url: "https://buzzheavier.com/xmasaulqnlsg",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "091-109",
+        url: "https://buzzheavier.com/q8owka6uokck",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "110-128",
+        url: "https://buzzheavier.com/e7199a7rrqrq",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "129-146",
+        url: "https://buzzheavier.com/3y4xf5eik4ug",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "147-163",
+        url: "https://buzzheavier.com/ci1thuk2htvb",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "164-180",
+        url: "https://buzzheavier.com/2lf2opul04w2",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "181-197",
+        url: "https://buzzheavier.com/sgfhc5wsjpds",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "198-225",
+        url: "https://buzzheavier.com/8a1fawx7ufqp",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "226-250",
+        url: "https://buzzheavier.com/ythtm5bjne1i",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Chaves",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/8m1wtsgl2us7",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02 Part 1",
+        url: "https://buzzheavier.com/amjcx00m8ev3",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02 Part 2",
+        url: "https://buzzheavier.com/va7bm07k2npp",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03 Part 1",
+        url: "https://buzzheavier.com/qmr1rkzrq6hz",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03 Part 2",
+        url: "https://buzzheavier.com/5l552uz9yau9",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04 Part 1",
+        url: "https://buzzheavier.com/zirb7rginu2z",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04 Part 2",
+        url: "https://buzzheavier.com/v4kt69wv7ptf",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05 Part 1",
+        url: "https://buzzheavier.com/k5exjn5cekef",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05 Part 2",
+        url: "https://buzzheavier.com/obeupbr51uuz",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S06 Part 1",
+        url: "https://buzzheavier.com/l4hw6zsy2pwx",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S06 Part 2",
+        url: "https://buzzheavier.com/vplyqwb49k8f",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S07 Part 1",
+        url: "https://buzzheavier.com/ckqzg51i40px",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S07 Part 2",
+        url: "https://buzzheavier.com/hvuaopynp1ff",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Courage the Cowardly Dog",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/x7wunzhwu1pz",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/npoei19vzc9b",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/whn9zc42t4tu",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/m8dbmyaste55",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "Specials",
+        url: "https://buzzheavier.com/5qyl5n9l7fc6",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Danny Phantom",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/c9ovtbo357tf",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/uoee4k84w8l1",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/elv2xroht0bz",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Daria",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/e0hx1boh05rj",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/4ldj0qjnwtwq",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/0pvm4owwxj4q",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/30xobxw1ttwx",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05",
+        url: "https://buzzheavier.com/ealj2oz54l1i",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "Specials",
+        url: "https://buzzheavier.com/fqf3v00ieigo",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Gravity Falls",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/9bzhn4g5jnzy",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/mumvxmxsrbqc",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "Specials",
+        url: "https://buzzheavier.com/at5krfad9bu1",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Junji Ito: Maniac Japanese Tales of the Macabre",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/svovjj52gqvz",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Movies",
+    links: [
+      {
+        title: "Children Underground (2001)",
+        url: "https://buzzheavier.com/1vwj2c79b177",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "Junk Films (2007)",
+        url: "https://buzzheavier.com/eyll6f76jp0k",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "Uzumaki (2000)",
+        url: "https://buzzheavier.com/y9vme9cqc95n",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "One of Us Is Lying",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/eqbtub56m2d9",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/z9oxex73w5cx",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Over the Garden Wall",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/9qzahffwl2zj",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Regular Show",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/kcuu3frozfcl",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/by8i5vxqx82i",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/2x410mivhxon",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S04",
+        url: "https://buzzheavier.com/kqrgwhqqatg9",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S05",
+        url: "https://buzzheavier.com/iyvnzsoof165",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S06",
+        url: "https://buzzheavier.com/osaqkmlpdflu",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S07",
+        url: "https://buzzheavier.com/obkh1sbmnzul",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S08",
+        url: "https://buzzheavier.com/cb878p9ayrhp",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Scott Pilgrim Takes Off",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/joxev0evaye2",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "The New Woody Woodpecker Show",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/uzgndmzdpma5",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S02",
+        url: "https://buzzheavier.com/du0rvensyvbe",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S03",
+        url: "https://buzzheavier.com/rmsus018mpsf",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "The Walter Lantz Archive",
+    links: [
+      {
+        title: "S1929",
+        url: "https://buzzheavier.com/cvipee5kzhd1",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1930",
+        url: "https://buzzheavier.com/efp19s9uha9q",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1931",
+        url: "https://buzzheavier.com/hg0bb9ryu9nj",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1932",
+        url: "https://buzzheavier.com/yvj6v986xg2u",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1933",
+        url: "https://buzzheavier.com/voelov3ihr0t",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1934",
+        url: "https://buzzheavier.com/eofqolqh55rm",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1935",
+        url: "https://buzzheavier.com/qhufx2g6g9vr",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1936",
+        url: "https://buzzheavier.com/a2i9f65twi1p",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1937",
+        url: "https://buzzheavier.com/kp7a36kor4u0",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1938",
+        url: "https://buzzheavier.com/oqgzlhfp8l6q",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1939",
+        url: "https://buzzheavier.com/0hltcoiykhcs",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1940",
+        url: "https://buzzheavier.com/jlbvuktx8z96",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1941",
+        url: "https://buzzheavier.com/zsckye88tmg9",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1942",
+        url: "https://buzzheavier.com/1znin7adv6b8",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1943",
+        url: "https://buzzheavier.com/xe2aex5lucr9",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1944",
+        url: "https://buzzheavier.com/wtgz6sxtar4e",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1945",
+        url: "https://buzzheavier.com/4b0lxn9owvgm",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1946",
+        url: "https://buzzheavier.com/trlazzigti49",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1947",
+        url: "https://buzzheavier.com/pyd892hnacj2",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1948",
+        url: "https://buzzheavier.com/bprj38lgyc8u",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1949",
+        url: "https://buzzheavier.com/vgw3idlvfvjj",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1951",
+        url: "https://buzzheavier.com/l8u6lv8sap1k",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1952",
+        url: "https://buzzheavier.com/f7wsk8czne4f",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1953",
+        url: "https://buzzheavier.com/qbt3amavrjrx",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1954",
+        url: "https://buzzheavier.com/1wk7msh9b4jr",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1955",
+        url: "https://buzzheavier.com/qmlwuphwi83t",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1956",
+        url: "https://buzzheavier.com/pvh83p05bpp7",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1957",
+        url: "https://buzzheavier.com/h8ub8dr4uf8r",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1958",
+        url: "https://buzzheavier.com/jkik9rrelpae",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1959",
+        url: "https://buzzheavier.com/7dhgf71dzmwh",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1960",
+        url: "https://buzzheavier.com/arj9vbjfv9lr",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1961",
+        url: "https://buzzheavier.com/3bz19al76z1k",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1962",
+        url: "https://buzzheavier.com/3csi09jr7nc6",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1963",
+        url: "https://buzzheavier.com/ssj24i1njn6o",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1964",
+        url: "https://buzzheavier.com/lkqdil071bxt",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1965",
+        url: "https://buzzheavier.com/jv4evtybkmfg",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1966",
+        url: "https://buzzheavier.com/n3hrf7mmupan",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1967",
+        url: "https://buzzheavier.com/ux774rdqqfet",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1968",
+        url: "https://buzzheavier.com/5souxi9v5hgt",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1969",
+        url: "https://buzzheavier.com/b55u35nc27au",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1970",
+        url: "https://buzzheavier.com/goumtyktocw8",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1971",
+        url: "https://buzzheavier.com/9l9g1i82tuec",
+        description: "",
+        tags: ["buzzheavier"]
+      },
+      {
+        title: "S1972",
+        url: "https://buzzheavier.com/pfxc23opgwxc",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Uzumaki (2024)",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/yuymqr5hp1im",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  },
+  {
+    category: "Wayne",
+    links: [
+      {
+        title: "S01",
+        url: "https://buzzheavier.com/h5t7prlkgc5n",
+        description: "",
+        tags: ["buzzheavier"]
+      }
+    ]
+  }
+];
+        function normalize(str) {
+            return str.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s\-\_\,\.\;]+/g, ''); // Remove spaces, hyphens, underscores, punctuation
+        }
+
+
+        // Slugify function for creating valid IDs
+        function slugify(text) {
+            return text.toString().toLowerCase()
+                .replace(/\s+/g, '-')       // Replace spaces with -
+                .replace(/[^\w-]+/g, '')   // Remove all non-word chars
+                .replace(/--+/g, '-')      // Replace multiple - with single -
+                .replace(/^-+/, '')        // Trim - from start of text
+                .replace(/-+$/, '');       // Trim - from end of text
+        }
+
+        // Render links function
+        function renderLinks(filteredData = linksData) {
+            const container = document.getElementById('linksContainer');
+            container.innerHTML = '';
+
+            filteredData.forEach(category => {
+                const categoryId = slugify(category.category); // Create a URL-friendly ID
+                const categoryHTML = `
+                    <div class="category-section" id="${categoryId}"> <!-- Add ID here -->
+                        <h2 class="category-title">${category.category}
+                          ${category.description ? `<span class="category-description">${category.description}</span>` : ''}
+                        </h2>
+                        <div class="links-grid">
+                            ${category.links.map(link => `
+                                <div class="link-card">
+                                    <a href="${link.url}" target="_blank" class="link-title">${link.title}</a>
+                                    <p class="link-description">${link.description}</p>
+                                    <div class="link-tags">
+                                        ${link.tags.map(tag => `<span class="tag">${tag}</span>`).join('')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += categoryHTML;
+            });
+
+            // Add event listeners to category titles
+            document.querySelectorAll('.category-title').forEach(title => {
+                title.addEventListener('click', () => {
+                    const linksGrid = title.nextElementSibling;
+                    linksGrid.classList.toggle('collapsed');
+                    title.classList.toggle('collapsed');
+                });
+            });
+        }
+
+        // Handle hash navigation
+        function handleHash() {
+            const hash = window.location.hash.substring(1); // Remove the '#' from the hash
+            if (hash) {
+                const element = document.getElementById(hash); // Find the element with the matching ID
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' }); // Scroll to the element
+                }
+            }
+        }
+
+                // Collapse All functionality
+                document.getElementById('collapseAllBtn').addEventListener('click', () => {
+            const allTitles = document.querySelectorAll('.category-title');
+            const allGrids = document.querySelectorAll('.links-grid');
+            const isCollapsed = allTitles[0]?.classList.contains('collapsed');
+
+            allTitles.forEach(title => {
+                if (!isCollapsed) {
+                    title.classList.add('collapsed');
+                } else {
+                    title.classList.remove('collapsed');
+                }
+            });
+
+            allGrids.forEach(grid => {
+                if (!isCollapsed) {
+                    grid.classList.add('collapsed');
+                } else {
+                    grid.classList.remove('collapsed');
+                }
+            });
+
+            // Update button text
+            const btn = document.getElementById('collapseAllBtn');
+            btn.textContent = isCollapsed ? 'Collapse All' : 'Expand All';
+        });
+
+        // Initial render and hash handling
+        renderLinks();
+        handleHash(); // Handle hash on page load
+        window.addEventListener('hashchange', handleHash); // Handle hash changes
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = normalize(e.target.value);
+            const filteredData = linksData.map(category => {
+                const categoryMatches = normalize(category.category).includes(searchTerm);
+                return {
+                    ...category,
+                    links: categoryMatches 
+                        ? category.links 
+                        : category.links.filter(link =>
+                            normalize(link.title).includes(searchTerm) ||
+                            normalize(link.description).includes(searchTerm) ||
+                            link.tags.some(tag => normalize(tag).includes(searchTerm))
+                        )
+                };
+            }).filter(category => category.links.length > 0);
+            
+            renderLinks(filteredData);
+        });
+
+    // Update category counter
+    function updateCategoryCounter() {
+        document.getElementById('categoryCount').textContent = linksData.length;
+    }        
+
+        // Initial render
+        renderLinks();
+      
+    // Call this after initial render
+    updateCategoryCounter();    
+    </script>
+
+<div class="warning-message">
+  ⚠️ For archival purposes only, this is only an indexer of links.
+</div>
+
+<!-- Home Button -->
+<a href="https://jcomicstampa.github.io/some-utils/" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+<style>
+.home-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-decoration: none;
+    color: #0051ff;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: #2563eb;
+    color: white;
+}
+
+.home-button:active {
+    transform: scale(0.95);
+}
+</style>
+
+</body>
+</html>
