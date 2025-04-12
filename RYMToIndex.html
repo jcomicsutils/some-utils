@@ -201,7 +201,7 @@
                 url,
                 title,
                 format,
-                siteTag
+                // siteTag
             };
         }
 
@@ -261,14 +261,14 @@
 
                 // Generate formatted output
                 const formattedLinks = links.map(link => 
-                    `        {
+            `        {
           title: "${link.title}",
-          url: "${link.url}",
+          url: ["${link.url}"],
           description: "",
           tags: [${link.tags.map(t => `"${t}"`).join(', ')}]
         }`).join(',\n');
 
-                output.textContent = `{
+        output.textContent = `{
   category: "${category}",
   links: [
 ${formattedLinks}
