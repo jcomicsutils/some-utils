@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Structure Editor</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: #151515;
+            --primary-color: #7c4dff;
+            --secondary-color: #00e676;
+            --text-primary: #ffffff;
+            --text-secondary: #888;
+            --error-color: #ff5252;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin: 0 0 2rem 0;
+            font-size: 2rem;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1600px;
+            min-height: 80vh;
+        }
+
+        .panel {
+            background: var(--surface-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            height: auto;
+            overflow: visible;
+        }
+
+        textarea {
+            flex: 1;
+            background: transparent;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 1.2rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 200px;
+            overflow: hidden;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.15);
+        }
+
+        .output-container {
+            background: #111;
+            border-radius: 10px;
+            padding: 1.2rem;
+            overflow: auto;
+            flex: 1;
+            position: relative; 
+        }
+
+        pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            color: var(--secondary-color);
+            line-height: 1.5;
+            padding-top: 2rem; 
+        }
+
+        .editor-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .array-field {
+            margin-bottom: 1rem;
+        }
+
+        .array-item {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        input {
+            background: #222;
+            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 0.5rem;
+            color: var(--text-primary);
+            width: 100%;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        button {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: 'Inter', system-ui, sans-serif;
+        }
+
+        button:hover {
+            background: #6d40e5;
+            transform: translateY(-1px);
+        }
+
+        .add-btn {
+            background: var(--secondary-color);
+            color: var(--bg-color);
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .description-label {
+            display: block;
+            margin: 1rem 0 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+        }
+
+        .entry-separator {
+            height: 1px;
+            background: #333;
+            margin: 1.5rem 0;
+        }
+
+        .category-editor {
+            background: #1a1a1a;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .entry-editor {
+            background: #222;
+            padding: 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid #333;
+        }
+
+        #editor {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            overflow: visible;
+            height: auto;
+            flex: 1;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1;
+        }
+
+        .entries-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+    </style>
+</head>
+<body>
+    <h1>Data Structure Editor</h1>
+    <div class="container">
+        <div class="panel">
+            <h2>Input Data</h2>
+            <textarea id="input" placeholder="Paste your data structure here..." oninput="parseInput()"></textarea>
+        </div>
+        
+        <div class="panel" style="gap: 2rem;">
+            <div style="display: flex; flex-direction: column; flex: 1; overflow: visible;">
+                <h2>Editor</h2>
+                <div id="editor"></div>
+            </div>
+            <div style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                <h2>Structured Output</h2>
+                <div class="output-container">
+                    <button class="copy-btn" onclick="copyOutput()">Copy</button>
+                    <pre id="output"></pre>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <script>
+        let currentData = null;
+        let hasCategories = false;
+
+        function parseInput() {
+            try {
+                let input = document.getElementById('input').value.trim();
+                hasCategories = input.includes('category:');
+
+                // Clean input (preserve trailing commas)
+                input = input.replace(/([{[])\s*,/g, '$1');
+
+                // Handle different input formats
+                let parsed;
+                try {
+                    // Try parsing as-is first
+                    parsed = (new Function('return ' + input))();
+                } catch (e) {
+                    // If that fails, try wrapping in array
+                    try {
+                        parsed = (new Function('return [' + input + ']'))();
+                    } catch (e2) {
+                        throw new Error("Invalid input format");
+                    }
+                }
+
+                // Normalize data structure
+                if (Array.isArray(parsed)) {
+                    if (parsed.length === 0) {
+                        currentData = [{ links: [] }];
+                    } else if (parsed[0].links !== undefined) {
+                        // Array of categories
+                        currentData = parsed;
+                        hasCategories = true;
+                    } else {
+                        // Array of entries
+                        currentData = [{ links: parsed }];
+                        hasCategories = false;
+                    }
+                } else if (parsed.links !== undefined) {
+                    // Single category
+                    currentData = [parsed];
+                    hasCategories = true;
+                } else {
+                    // Single entry
+                    currentData = [{ links: [parsed] }];
+                    hasCategories = false;
+                }
+
+                renderEditor();
+                showStatus('Data loaded successfully!', 'secondary-color');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error-color');
+            }
+        }
+
+        function renderEditor() {
+            const editor = document.getElementById('editor');
+            editor.innerHTML = '';
+
+            currentData.forEach((category, catIndex) => {
+                editor.innerHTML += `
+                    <div class="category-editor">
+                        ${hasCategories ? `
+                        <h3>Category</h3>
+                        <input type="text" value="${category.category || ''}" 
+                               oninput="updateCategoryField(${catIndex}, this.value)">` : ''}
+                        
+                        <div class="entries-container">
+                            ${category.links.map((link, linkIndex) => `
+                                <div class="entry-editor">
+                                    ${createEntryEditor(link, linkIndex, catIndex)}
+                                    <button onclick="removeEntry(${catIndex}, ${linkIndex})" 
+                                            class="remove-btn">Remove Entry</button>
+                                </div>
+                                ${linkIndex < category.links.length - 1 ? '<div class="entry-separator"></div>' : ''}
+                            `).join('')}
+                        </div>
+                        <button class="add-btn" onclick="addEntry(${catIndex})">+ Add Entry</button>
+                    </div>
+                `;
+            });
+            
+            updateOutput();
+        }
+
+        function createEntryEditor(entry, entryIndex, catIndex) {
+            return `
+                <div>
+                    <input type="text" value="${entry.title}" 
+                           oninput="updateEntryField(${catIndex}, ${entryIndex}, 'title', this.value)"
+                           placeholder="Title">
+                    
+                    <div class="array-field">
+                        <label>URLs</label>
+                        ${entry.url.map((url, urlIndex) => `
+                            <div class="array-item">
+                                <input type="text" value="${url}"
+                                       oninput="updateUrl(${catIndex}, ${entryIndex}, ${urlIndex}, this.value)">
+                                <button onclick="removeUrl(${catIndex}, ${entryIndex}, ${urlIndex})">×</button>
+                            </div>
+                        `).join('')}
+                        <button class="add-btn" onclick="addUrl(${catIndex}, ${entryIndex})">+ Add URL</button>
+                    </div>
+
+                    <div class="array-field">
+                        <label>Tags</label>
+                        ${entry.tags.map((tag, tagIndex) => `
+                            <div class="array-item">
+                                <input type="text" value="${tag}"
+                                       oninput="updateTag(${catIndex}, ${entryIndex}, ${tagIndex}, this.value)">
+                                <button onclick="removeTag(${catIndex}, ${entryIndex}, ${tagIndex})">×</button>
+                            </div>
+                        `).join('')}
+                        <button class="add-btn" onclick="addTag(${catIndex}, ${entryIndex})">+ Add Tag</button>
+                    </div>
+
+                    <span class="description-label">Description</span>
+                    <textarea oninput="updateEntryField(${catIndex}, ${entryIndex}, 'description', this.value)"
+                              >${entry.description || ''}</textarea>
+                </div>
+            `;
+        }
+
+        function updateCategoryField(catIndex, value) {
+            currentData[catIndex].category = value;
+            updateOutput();
+        }
+
+        function updateEntryField(catIndex, entryIndex, field, value) {
+            currentData[catIndex].links[entryIndex][field] = value;
+            updateOutput();
+        }
+
+        function updateUrl(catIndex, entryIndex, urlIndex, value) {
+            currentData[catIndex].links[entryIndex].url[urlIndex] = value;
+            updateOutput();
+        }
+
+        function addUrl(catIndex, entryIndex) {
+            currentData[catIndex].links[entryIndex].url.push('');
+            renderEditor();
+        }
+
+        function removeUrl(catIndex, entryIndex, urlIndex) {
+            currentData[catIndex].links[entryIndex].url.splice(urlIndex, 1);
+            renderEditor();
+        }
+
+        function updateTag(catIndex, entryIndex, tagIndex, value) {
+            currentData[catIndex].links[entryIndex].tags[tagIndex] = value;
+            updateOutput();
+        }
+
+        function addTag(catIndex, entryIndex) {
+            currentData[catIndex].links[entryIndex].tags.push('');
+            renderEditor();
+        }
+
+        function removeTag(catIndex, entryIndex, tagIndex) {
+            currentData[catIndex].links[entryIndex].tags.splice(tagIndex, 1);
+            renderEditor();
+        }
+
+        function addEntry(catIndex) {
+            currentData[catIndex].links.push({
+                title: "New Entry",
+                url: [""],
+                description: "",
+                tags: []
+            });
+            renderEditor();
+        }
+
+        function removeEntry(catIndex, entryIndex) {
+            currentData[catIndex].links.splice(entryIndex, 1);
+            renderEditor();
+        }
+
+        function updateOutput() {
+            const output = document.getElementById('output');
+            let result = '';
+            
+            currentData.forEach((category, catIndex) => {
+                if (hasCategories) {
+                    result += `  {
+    category: "${category.category}",
+    links: [
+`;
+                } else if (catIndex === 0) {
+                    result += `      {
+`;
+                }
+
+                category.links.forEach((link, index) => {
+                    const urlList = link.url.map(url => `"${url}"`).join(', ');
+                    const tagList = link.tags.map(tag => `"${tag}"`).join(', ');
+                    
+                    if (hasCategories) {
+                        result += `      {
+        title: "${link.title}",
+        url: [${urlList}],
+        description: "${link.description}",
+        tags: [${tagList}]
+      }${index < category.links.length - 1 ? ',' : ''}
+`;
+                    } else {
+                        result += `        title: "${link.title}",
+        url: [${urlList}],
+        description: "${link.description}",
+        tags: [${tagList}]
+      }${index < category.links.length - 1 ? ',' : ''}
+`;
+                    }
+                });
+
+                if (hasCategories) {
+                    result += `    ]
+  },`;
+                } else {
+                    result += `      ${catIndex < currentData.length - 1 ? ',' : ''}`;
+                }
+            });
+
+            output.textContent = result;
+        }
+
+        function copyOutput() {
+            navigator.clipboard.writeText(document.getElementById('output').textContent)
+                .then(() => showStatus('Copied to clipboard!', 'primary-color'))
+                .catch(err => showStatus('Failed to copy!', 'error-color'));
+        }
+
+        function showStatus(message, colorVar = 'primary-color') {
+            const status = document.getElementById('status');
+            status.style.color = `var(${colorVar})`;
+            status.textContent = message;
+            status.style.opacity = '1';
+            setTimeout(() => status.style.opacity = '0', 2000);
+        }
+    </script>
+</body>
+</html>
