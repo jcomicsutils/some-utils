@@ -451,6 +451,12 @@
             try {
                 const hostname = new URL(url).hostname;
                 const clean = hostname.replace(/^www\./i, '');
+                
+                // Handle special case for files.vc
+                if (clean === 'files.vc') {
+                    return 'files.vc';
+                }
+                
                 const parts = clean.split('.');
                 return parts.length > 1 ? parts[parts.length - 2] : parts[0];
             } catch {

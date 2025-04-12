@@ -195,26 +195,34 @@
       const output = document.getElementById('output');
       try {
         const text = input.value;
-        // Adjusted regex to capture the complete linksData array.
         const arrayMatch = text.match(/const\s+linksData\s*=\s*(\[[\s\S]*\])\s*;?\s*$/m);
         if (!arrayMatch) {
           throw new Error("Could not find a complete 'linksData' array in the input. Please ensure the array is complete.");
         }
         const arrayString = arrayMatch[1];
-        // Parse the array using the Function constructor.
         const data = new Function("return " + arrayString)();
         if (!Array.isArray(data)) {
           throw new Error("Parsed data is not an array. Please check your input.");
         }
-        // Sort the array by the category field (using localized name if available)
+        
+        // Sort by category
         data.sort((a, b) => {
           const keyA = getSortKey(a.category);
           const keyB = getSortKey(b.category);
-          if (keyA < keyB) return -1;
-          if (keyA > keyB) return 1;
-          return 0;
+          return keyA.localeCompare(keyB);
         });
-        // Format the sorted data using our custom formatter.
+
+        // Sort URLs within each item
+        data.forEach(category => {
+          if (category.items && Array.isArray(category.items)) {
+            category.items.forEach(item => {
+              if (item.url && Array.isArray(item.url)) {
+                item.url.sort((a, b) => a.localeCompare(b));
+              }
+            });
+          }
+        });
+
         const outputText = "const linksData = " + formatValue(data, "") + ";";
         output.textContent = outputText;
         input.classList.remove('error');

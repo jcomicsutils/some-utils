@@ -11,15 +11,9 @@ except ImportError:
     py7zr_available = False
 
 def process_archive(file_path):
-    """
-    Given a file path to an archive, extract the internal names and
-    determine the unique top-level folder. Returns a tuple:
-      (folder_name, None) if exactly one top-level folder is found,
-      (None, error_message) if there's an error or ambiguity.
-    """
+    """Extract internal names and determine the unique top-level folder."""
     ext = os.path.splitext(file_path)[1].lower()
     
-    # Read file list depending on the type of archive.
     if ext == ".zip":
         try:
             with zipfile.ZipFile(file_path, 'r') as zf:
@@ -37,11 +31,9 @@ def process_archive(file_path):
     else:
         return None, "Unsupported file type."
 
-    # Determine the unique top-level folder.
-    # Split each name on '/' and filter out empty strings.
     top_levels = set()
     for name in names:
-        parts = [p for p in name.split('/') if p]  # Remove empty parts.
+        parts = [p for p in name.split('/') if p]
         if parts:
             top_levels.add(parts[0])
     
@@ -51,14 +43,10 @@ def process_archive(file_path):
         else:
             return None, "Archive does not contain exactly one top-level folder."
     
-    folder_name = top_levels.pop()
-    return folder_name, None
+    return top_levels.pop(), None
 
 def rename_archive(file_path, folder_name):
-    """
-    Rename the archive file to have the name of its internal folder.
-    Preserves the original extension.
-    """
+    """Rename the archive to match its internal folder name."""
     dir_name = os.path.dirname(file_path)
     ext = os.path.splitext(file_path)[1]
     new_path = os.path.join(dir_name, folder_name + ext)
@@ -68,68 +56,85 @@ def rename_archive(file_path, folder_name):
         os.rename(file_path, new_path)
     except Exception as e:
         return f"Error renaming file: {e}"
-    return None  # Indicates success.
+    return None
 
-def process_folder(folder, log_func):
-    """
-    Scan the given folder for ZIP and 7z files. For each archive found, determine
-    the unique top-level folder and rename the file. Log messages using the provided
-    log_func callback.
-    """
-    for entry in os.listdir(folder):
-        file_path = os.path.join(folder, entry)
-        if os.path.isfile(file_path) and file_path.lower().endswith((".zip", ".7z")):
-            log_func(f"Processing: {entry}")
-            folder_name, error = process_archive(file_path)
-            if error:
-                log_func(f"  Error: {error}")
-            else:
-                err = rename_archive(file_path, folder_name)
-                if err:
-                    log_func(f"  Error: {err}")
-                else:
-                    log_func(f"  Renamed to: {folder_name + os.path.splitext(file_path)[1]}")
+def process_single_file(file_path, log_func):
+    """Process a single archive file and log results."""
+    filename = os.path.basename(file_path)
+    log_func(f"Processing: {filename}")
+    folder_name, error = process_archive(file_path)
+    if error:
+        log_func(f"  Error: {error}")
+    else:
+        err = rename_archive(file_path, folder_name)
+        if err:
+            log_func(f"  Error: {err}")
+        else:
+            new_name = f"{folder_name}{os.path.splitext(file_path)[1]}"
+            log_func(f"  Renamed to: {new_name}")
+
+def process_folder(folder, log_func, recursive=False):
+    """Process archives in the folder (and subfolders if recursive)."""
+    if recursive:
+        for dirpath, _, filenames in os.walk(folder):
+            for filename in filenames:
+                if filename.lower().endswith((".zip", ".7z")):
+                    file_path = os.path.join(dirpath, filename)
+                    process_single_file(file_path, log_func)
+    else:
+        for entry in os.listdir(folder):
+            file_path = os.path.join(folder, entry)
+            if os.path.isfile(file_path) and file_path.lower().endswith((".zip", ".7z")):
+                process_single_file(file_path, log_func)
     log_func("Processing complete.\n")
 
 class ArchiveRenamerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Archive Renamer")
+        self.include_subfolders = tk.BooleanVar(value=False)
         self.create_widgets()
 
     def create_widgets(self):
-        # Frame for folder selection.
-        frame = tk.Frame(self.root)
-        frame.pack(padx=10, pady=10, fill=tk.X)
+        # Top frame for folder selection
+        top_frame = tk.Frame(self.root)
+        top_frame.pack(padx=10, pady=10, fill=tk.X)
 
-        self.folder_label = tk.Label(frame, text="No folder selected")
+        self.folder_label = tk.Label(top_frame, text="No folder selected")
         self.folder_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
 
-        select_btn = tk.Button(frame, text="Select Folder", command=self.select_folder)
+        select_btn = tk.Button(top_frame, text="Select Folder", command=self.select_folder)
         select_btn.pack(side=tk.LEFT, padx=5)
 
-        process_btn = tk.Button(frame, text="Process Files", command=self.process_files)
+        process_btn = tk.Button(top_frame, text="Process Files", command=self.process_files)
         process_btn.pack(side=tk.LEFT, padx=5)
 
-        # ScrolledText widget for logging.
+        # Checkbox for subfolders
+        options_frame = tk.Frame(self.root)
+        options_frame.pack(padx=10, pady=5, anchor=tk.W)
+        tk.Checkbutton(
+            options_frame, 
+            text="Include Subfolders", 
+            variable=self.include_subfolders
+        ).pack(side=tk.LEFT)
+
+        # Log area
         self.log_area = scrolledtext.ScrolledText(self.root, height=15, width=70, state=tk.DISABLED)
-        self.log_area.pack(padx=10, pady=(0,10))
+        self.log_area.pack(padx=10, pady=(0,10), fill=tk.BOTH, expand=True)
 
     def select_folder(self):
         folder = filedialog.askdirectory()
         if folder:
             self.folder_path = folder
-            self.folder_label.config(text=self.folder_path)
-            self.log(f"Selected folder: {self.folder_path}\n")
-        else:
-            self.folder_path = None
+            self.folder_label.config(text=folder)
+            self.log(f"Selected folder: {folder}\n")
 
     def process_files(self):
-        if not hasattr(self, "folder_path") or not self.folder_path:
+        if not hasattr(self, "folder_path"):
             messagebox.showwarning("Warning", "Please select a folder first.")
             return
-        self.log("Starting processing...\n")
-        process_folder(self.folder_path, self.log)
+        self.log("Starting processing...")
+        process_folder(self.folder_path, self.log, self.include_subfolders.get())
 
     def log(self, message):
         self.log_area.config(state=tk.NORMAL)
@@ -139,7 +144,7 @@ class ArchiveRenamerGUI:
 
 def main():
     root = tk.Tk()
-    app = ArchiveRenamerGUI(root)
+    ArchiveRenamerGUI(root)
     root.mainloop()
 
 if __name__ == "__main__":
