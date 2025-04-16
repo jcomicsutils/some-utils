@@ -211,6 +211,9 @@
         <div class="panel">
             <h2>Input Data</h2>
             <textarea id="input" placeholder="Paste your data structure here..." oninput="parseInput()"></textarea>
+            <div style="margin-top: 1rem;">
+                <button class="add-btn" onclick="addBlankStructure()">Add Blank</button>
+            </div>
         </div>
         
         <div class="panel" style="gap: 2rem;">
@@ -469,6 +472,23 @@
             status.textContent = message;
             status.style.opacity = '1';
             setTimeout(() => status.style.opacity = '0', 2000);
+        }
+
+        function addBlankStructure() {
+            const blankStructure = `  {
+            category: "",
+            links: [
+            {
+                title: "",
+                url: [""],
+                description: "",
+                tags: [""]
+            }
+            ]
+        },`;
+            const textarea = document.getElementById('input');
+            textarea.value = blankStructure;
+            parseInput();
         }
     </script>
 </body>
