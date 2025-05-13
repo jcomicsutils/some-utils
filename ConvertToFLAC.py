@@ -12,7 +12,7 @@ def convert_audio_files(directory):
         return
 
     # Supported extensions
-    supported_extensions = (".mp3", ".wav", ".aac", ".ogg", ".m4a", ".wma")
+    supported_extensions = (".mp3", ".wav", ".aac", ".ogg", ".m4a", ".wma", ".dsf")
     
     # Find all audio files in the directory
     audio_files = [
