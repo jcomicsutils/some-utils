@@ -66,6 +66,7 @@ class FileUploaderApp:
 
         self.apply_dark_theme()
         self.create_widgets()
+        self.toggle_existing_entry()
         self.root.after(100, self.update_logs)
 
     def apply_dark_theme(self):
@@ -125,8 +126,6 @@ class FileUploaderApp:
         self.identifier_entry = ttk.Entry(exist_frame,
                                           textvariable=self.existing_identifier,
                                           width=40, foreground="#2e2e2e")
-        # initially hidden
-        self.identifier_entry.grid_remove()
 
         # Logs
         logf = ttk.Frame(self.root)
@@ -241,7 +240,7 @@ class FileUploaderApp:
                             verbose=True
                         )
                         if all(r.status_code == 200 for r in resp):
-                            msg = f"{folder_name}: https://archive.org/details/{identifier}"
+                            msg = f"{folder_name}: \"https://archive.org/details/{identifier}\","
                             self.service_queues['internetarchive'].put(msg)
                             break
                         else:

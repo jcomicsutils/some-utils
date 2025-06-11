@@ -12,8 +12,8 @@ import json
 import tkinter.font
 
 # ========== CONFIGURE THESE VALUES ==========
-ACCOUNT_ID = "" #files-vc
-API_KEY = "" #files-vc
+ACCOUNT_ID = ""
+API_KEY = ""
 CATBOX_USERHASH = ""
 MAX_RETRIES = 20
 RETRY_DELAY = 0.5  # seconds between retries
@@ -42,7 +42,7 @@ class FileUploaderApp:
         self.error_queue = queue.Queue()
         self.upload_queue = queue.Queue()
         self.consolidated_queue = queue.Queue()
-        self.max_workers = 10
+        self.max_workers_var = tk.IntVar(value=10)
         self.services = {
             'files.vc': tk.BooleanVar(value=True),
             'fileditch': tk.BooleanVar(value=True),
@@ -78,6 +78,13 @@ class FileUploaderApp:
         style.configure("TButton", background=dark_button_bg, foreground=dark_fg)
         style.map("TButton", background=[("active", dark_frame_bg)])
         style.configure("TCheckbutton", background=dark_bg, foreground=dark_fg)
+        style.configure("TSpinbox",
+            fieldbackground="#2e2e2e",
+            background="#2e2e2e",
+            foreground="#ffffff",
+            insertcolor="#ffffff"
+        )
+        style.map("TSpinbox", background=[("readonly", "#2e2e2e")])
         
     def create_widgets(self):
         service_frame = ttk.LabelFrame(self.root, text="Services")
@@ -100,6 +107,14 @@ class FileUploaderApp:
         self.clear_btn.pack(side=tk.LEFT, padx=5)
         self.save_log_check = ttk.Checkbutton(button_frame, text="Save Logs to File", variable=self.save_log_var)
         self.save_log_check.pack(side=tk.RIGHT, padx=5)
+
+        left_btn_frame = ttk.Frame(button_frame)
+        left_btn_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        ttk.Label(left_btn_frame, text="Max Concurrent:").pack(side=tk.LEFT, padx=5)
+        self.max_workers_spin = ttk.Spinbox(
+            left_btn_frame, from_=1, to=50, width=4, textvariable=self.max_workers_var
+        )
+        self.max_workers_spin.pack(side=tk.LEFT, padx=5)
 
         service_panels = ttk.Frame(self.root)
         service_panels.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky=tk.NSEW)
@@ -169,15 +184,21 @@ class FileUploaderApp:
         if folder_path == "No folder selected":
             self.error_queue.put("ERROR: Please select a folder first")
             return
+        try:
+            max_workers = int(self.max_workers_var.get())
+            if max_workers < 1: raise ValueError
+        except ValueError:
+            self.error_queue.put("Invalid concurrent files value. Using default 10.")
+            max_workers = 10
 
         self.upload_btn.config(state=tk.DISABLED)
         threading.Thread(
             target=self.prepare_upload,
-            args=(folder_path,),
+            args=(folder_path, max_workers),
             daemon=True
         ).start()
 
-    def prepare_upload(self, folder_path):
+    def prepare_upload(self, folder_path, max_workers):
         try:
             files = [os.path.join(folder_path, f) 
                     for f in os.listdir(folder_path)
@@ -187,7 +208,7 @@ class FileUploaderApp:
                 self.upload_queue.put(file_path)
             
             workers = []
-            for _ in range(min(self.max_workers, len(files))):
+            for _ in range(min(max_workers, len(files))):
                 worker = threading.Thread(
                     target=self.upload_worker,
                     daemon=True

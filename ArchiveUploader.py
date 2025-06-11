@@ -215,7 +215,7 @@ class FileUploaderApp:
                             verbose=True
                         )
                         if all(r.status_code == 200 for r in resp):
-                            msg = f"{folder_name}: https://archive.org/details/{identifier}"
+                            msg = f"{folder_name}: \"https://archive.org/details/{identifier}\","
                             self.service_queues['internetarchive'].put(msg)
                             break
                         else:
