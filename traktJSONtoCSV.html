@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>JSON → CSV Converter</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; background: #f5f5f5; }
+    .container { background: #fff; padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
+    input, button { width: 100%; padding: 0.75rem; margin-top: 1rem; font-size: 1rem; }
+    button { background: #007BFF; color: #fff; border: none; cursor: pointer; border-radius: 4px; }
+    button:disabled { background: #aaa; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Convert Watchlist JSON to CSV</h2>
+    <input type="file" id="jsonInput" accept=".json">
+    <button id="convertBtn" disabled>Generate CSV</button>
+  </div>
+
+  <script>
+    const jsonInput = document.getElementById('jsonInput');
+    const convertBtn = document.getElementById('convertBtn');
+
+    // The exact header order from your trakt_v1.csv
+    const HEADER = [
+      'rated_at','type','title','year','trakt_rating',
+      'trakt_id','imdb_id','tmdb_id','tvdb_id','url',
+      'released','season_number','episode_number','episode_title',
+      'episode_released','episode_trakt_rating','episode_trakt_id',
+      'episode_imdb_id','episode_tmdb_id','episode_tvdb_id','rating'
+    ];
+
+    jsonInput.addEventListener('change', () => {
+      convertBtn.disabled = !jsonInput.files.length;
+    });
+
+    convertBtn.addEventListener('click', () => {
+      const file = jsonInput.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = e => {
+        let data;
+        try {
+          data = JSON.parse(e.target.result);
+        } catch (err) {
+          alert('Invalid JSON');
+          return;
+        }
+
+        // Build CSV
+        const lines = [];
+        lines.push(HEADER.join(','));  // header
+
+        data.forEach(item => {
+          const isShow = item.type === 'show';
+          const obj = isShow ? item.show : item.movie;
+          const ids = obj.ids || {};
+          const slug = ids.slug || '';
+          const year = obj.year || '';
+          // build trakt.tv URL
+          let url = '';
+          if (isShow) {
+            url = `https://trakt.tv/shows/${slug}`;
+          } else {
+            // movies include year in slug
+            url = `https://trakt.tv/movies/${slug}`;
+          }
+
+          const row = HEADER.map(field => {
+            switch (field) {
+              case 'rated_at':            return item.listed_at || '';
+              case 'type':                return item.type || '';
+              case 'title':               return obj.title || '';
+              case 'year':                return obj.year || '';
+              case 'trakt_rating':        return '';  // not in watchlist.json
+              case 'trakt_id':            return ids.trakt ?? '';
+              case 'imdb_id':             return ids.imdb ?? '';
+              case 'tmdb_id':             return ids.tmdb ?? '';
+              case 'tvdb_id':             return ids.tvdb ?? '';
+              case 'url':                 return url;
+              // everything from here on is episode or rating info we don't have:
+              case 'released':
+              case 'season_number':
+              case 'episode_number':
+              case 'episode_title':
+              case 'episode_released':
+              case 'episode_trakt_rating':
+              case 'episode_trakt_id':
+              case 'episode_imdb_id':
+              case 'episode_tmdb_id':
+              case 'episode_tvdb_id':
+              case 'rating':
+                return '';
+              default:
+                return '';
+            }
+          });
+
+          // escape any commas or quotes in values
+          const escaped = row.map(v =>
+            `"${String(v).replace(/"/g, '""')}"`
+          );
+          lines.push(escaped.join(','));
+        });
+
+        // offer download
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
+        const urlLink = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = urlLink;
+        a.download = 'watchlist.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(urlLink);
+      };
+      reader.readAsText(file);
+    });
+  </script>
+</body>
+</html>
