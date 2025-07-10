@@ -5,231 +5,278 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>music index</title>
     <style>
-        :root {
-            --primary-color: #2563eb;
-            --background-color: #f8fafc;
-            --text-color: #1e293b;
-        }
+    :root {
+        /* Define the color palette */
+        --primary-color: #c792ea; /* Accent purple */
+        --background-color-dark: #1e1e2f; /* Dark background */
+        --background-color-light: #2b2844; /* Lighter background for panels */
+        --text-color-primary: #dcd9f4; /* Primary text color */
+        --text-color-secondary: #9f9fce; /* Secondary text color */
+        --border-color-strong: #c792ea; /* Accent border */
+        --border-color-soft: #413a63; /* Softer border for panels */
+    }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
 
-        body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            line-height: 1.6;
-            background-color: var(--background-color);
-            color: var(--text-color);
-            padding: 2rem 1rem;
-        }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+        line-height: 1.6;
+        background: linear-gradient(to bottom right, #1e1e2f, #1e1e24);
+        color: var(--text-color-primary);
+        padding: 2rem 1rem;
+    }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+    .container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
 
-        .search-box {
-            margin-bottom: 2rem;
-            position: relative;
-        }
+    h1 {
+        color: var(--primary-color);
+        text-align: center;
+        font-size: 2.2em;
+        margin-bottom: 2rem;
+    }
 
-        #searchInput {
-            width: 100%;
-            padding: 1rem;
-            border: 2px solid #e2e8f0;
-            border-radius: 8px;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
-        }
+    /* --- Search and Controls --- */
+    .search-box {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 2rem;
+    }
 
-        #searchInput:focus {
-            outline: none;
-            border-color: var(--primary-color);
-        }
+    #searchInput {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        background-color: var(--background-color-light);
+        border: 1px solid var(--border-color-soft);
+        border-radius: 8px;
+        color: var(--text-color-primary);
+        transition: border-color 0.3s ease, background-color 0.3s ease;
+    }
 
-        .category-section {
-            margin: 2rem 0;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            padding: 1.5rem;
-        }
+    #searchInput:focus {
+        outline: none;
+        border-color: var(--border-color-strong);
+        background-color: #3a3f4b;
+    }
 
-        .category-title {
-            color: var(--primary-color);
-            margin-bottom: 1rem;
-            padding-bottom: 0.5rem;
-            border-bottom: 2px solid #e2e8f0;
-            cursor: pointer;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .category-description {
-            display: block;
-            font-size: 0.9rem;
-            color: #64748b;
-            font-weight: normal;
-            margin-top: 0.25rem;
-        }
-
-        .category-title::after {
-            content: '▼';
-            font-size: 0.8rem;
-            transition: transform 0.3s ease;
-        }
-
-        .category-title.collapsed::after {
-            transform: rotate(-90deg); /* Rotate arrow when collapsed */
-        }
-
-        .links-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 1rem;
-            transition: opacity 0.3s ease, max-height 0.3s ease;
-            overflow: hidden;
-        }
-
-        .links-grid.collapsed {
-            opacity: 0;
-            max-height: 0;
-        }
-
-        .link-card {
-            padding: 1rem;
-            border-radius: 8px;
-            background: #fff;
-            transition: transform 0.2s ease;
-            border: 1px solid #e2e8f0;
-        }
-
-        .link-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .link-urls {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-            margin-bottom: 0.5rem;
-            margin: 0.5rem 0;
-        }
-
-        .site-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-size: 0.9rem;
-            border: 1px solid #e2e8f0;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            transition: background-color 0.2s ease;
-        }
-
-        .site-link:hover {
-            background-color: #f1f5f9;
-            text-decoration: none;
-        }
-
-        .link-title {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 600;
-            display: block;
-            margin-bottom: 0.5rem;
-            font-size: 1rem;
-        }
-
-        .link-description {
-            color: #64748b;
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-
-        .link-tags {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
-        }
-
-        .tag {
-            background: #e2e8f0;
-            padding: 0.25rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            color: #475569;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 1rem 0.5rem;
-            }
-            
-            .category-section {
-                padding: 1rem;
-            }
-        }
-
-        .search-box {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 2rem;
-            }
-
-        #collapseAllBtn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 0 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            font-size: 0.9rem;
-            white-space: nowrap;
-        }
-
-        #collapseAllBtn:hover {
-            background-color: #1d4ed8;
-        }
-
-        @media (max-width: 768px) {
-            .search-box {
-                flex-direction: column;
-            }
-            
-            #collapseAllBtn {
-                padding: 0.75rem 1rem;
-                width: 100%;
-            }
-        }
-        .category-counter {
-        position: absolute;
-        top: 1rem;
-        right: 1rem;
+    #collapseAllBtn {
         background-color: var(--primary-color);
-        color: white;
+        color: var(--background-color-dark);
+        font-weight: bold;
+        border: none;
+        padding: 0 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    #collapseAllBtn:hover {
+        background-color: #d1a4f0; /* Lighter purple on hover */
+    }
+
+    /* --- Category Section --- */
+    .category-section {
+        margin: 2rem 0;
+        background: var(--background-color-light);
+        border: 1px solid var(--border-color-soft);
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .category-title {
+        color: var(--primary-color);
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid var(--border-color-soft);
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.5em;
+    }
+
+    .category-description {
+        display: block;
+        font-size: 0.9rem;
+        color: var(--text-color-secondary);
+        font-weight: normal;
+        margin-top: 0.25rem;
+    }
+
+    .category-title::after {
+        content: '▼';
+        font-size: 0.8rem;
+        transition: transform 0.3s ease;
+    }
+
+    .category-title.collapsed::after {
+        transform: rotate(-90deg);
+    }
+
+    .links-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 1rem;
+        transition: opacity 0.3s ease, max-height 0.3s ease;
+        overflow: hidden;
+    }
+
+    .links-grid.collapsed {
+        opacity: 0;
+        max-height: 0;
+        margin-top: -1rem; /* Smooth collapse */
+    }
+
+    /* --- Link Cards --- */
+    .link-card {
+        padding: 1rem;
+        border-radius: 8px;
+        background: var(--background-color-dark);
+        border: 1px solid var(--border-color-soft);
+        transition: border-color 0.2s ease, transform 0.2s ease;
+    }
+
+    .link-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+    }
+
+    .link-title {
+        color: var(--text-color-primary);
+        font-weight: 600;
+        display: block;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .link-urls {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.5rem;
+        margin: 0.5rem 0;
+    }
+
+    .site-link {
+        color: var(--primary-color);
+        background-color: var(--background-color-light);
+        text-decoration: none;
+        font-size: 0.9rem;
+        border: 1px solid var(--border-color-soft);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    .site-link:hover {
+        background-color: var(--primary-color);
+        color: var(--background-color-dark);
+        text-decoration: none;
+    }
+
+    .link-description {
+        color: var(--text-color-secondary);
+        font-size: 0.9rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .link-tags {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.75rem;
+    }
+
+    .tag {
+        background: var(--border-color-soft);
+        padding: 0.25rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        color: var(--text-color-secondary);
+        font-weight: bold;
+    }
+
+    /* --- Floating Elements & Warnings --- */
+    .category-counter {
+        position: absolute; 
+        top: 20px;
+        right: 20px;
+        background-color: var(--primary-color);
+        color: var(--background-color-dark);
         padding: 0.35rem 0.75rem;
         border-radius: 6px;
         font-size: 0.85rem;
         font-weight: 500;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         z-index: 1000;
-        /* Small size and fixed positioning */
     }
-        .warning-message {
-        color: #dc2626; /* Red-600 */
+    
+    .warning-message {
+        color: #e06c75; 
         font-size: 0.9rem;
         text-align: center;
         padding: 1rem;
         margin: 2rem 0;
-        border: 1px solid #fecaca; /* Red-100 */
+        border: 1px solid rgba(224, 108, 117, 0.4);
         border-radius: 8px;
-        background-color: #fef2f2; /* Red-50 */
+        background-color: rgba(224, 108, 117, 0.1);
         box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    
+    .home-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 50px;
+        height: 50px;
+        background: var(--primary-color);
+        border-radius: 50%;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        text-decoration: none;
+        color: var(--background-color-dark);
+        transition: all 0.3s ease;
+        z-index: 1000;
+    }
+
+    .home-button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        background: #d1a4f0;
+    }
+    
+    /* --- Responsive Adjustments --- */
+    @media (max-width: 768px) {
+        body {
+            padding: 1rem 0.5rem;
+        }
+        
+        .category-section {
+            padding: 1rem;
+        }
+
+        .search-box {
+            flex-direction: column;
+        }
+        
+        #collapseAllBtn {
+            padding: 0.75rem 1rem;
+            width: 100%;
+        }
     }
     </style>
 </head>
@@ -1217,6 +1264,113 @@ const linksData = [
         url: ["https://archive.org/details/1747453481_ahamah", "https://fileditchfiles.me/file.php?f=/s22/APanahLMeMmnPZaZBiVV.7z", "https://files.vc/d/dl?hash=563723290baeacd4f549e926e90bafb1", "https://pomf2.lain.la/f/ebmtb33k.7z"],
         description: "",
         tags: ["FLAC"]
+      }
+    ]
+  },
+  {
+    category: "Ak'chamel",
+    links: [
+      {
+        title: "Folder",
+        url: ["https://archive.org/details/akchamel-discography"],
+        description: "",
+        tags: []
+      },
+      {
+        title: "A Mournful Kingdom Of Sand",
+        url: ["https://archive.org/details/1751931251_a_mournful_kingdom_of_sand", "https://fileditchfiles.me/file.php?f=/s23/cIWNtiuUTLYQAOYUpnlB.7z", "https://files.vc/d/dl?hash=4dd3d26111d7df83c684fd9ff37be13b", "https://pomf2.lain.la/f/r19g0t.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Death Chants",
+        url: ["https://archive.org/details/1751932199_death_chants", "https://fileditchfiles.me/file.php?f=/s23/IzxrhEQQAkPhYuvutq.7z", "https://files.catbox.moe/bqo4gz.7z", "https://files.vc/d/dl?hash=ce1dd9761a3d338b234daff7165b12bc", "https://pomf2.lain.la/f/1sqaubq.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "Foreskin of Enlightenment",
+        url: ["https://archive.org/details/1751932511_foreskin_of_enlightenment", "https://fileditchfiles.me/file.php?f=/s23/hDNTNUhwNTgyiEwRzPP.7z", "https://files.catbox.moe/yyvcu6.7z", "https://files.vc/d/dl?hash=9c85a233a6ee39e3a5ca6465cafe4771", "https://pomf2.lain.la/f/ttx12i1.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Fucking With Spirits",
+        url: ["https://archive.org/details/1751932747_fucking_with_spirits", "https://fileditchfiles.me/file.php?f=/s23/caCDVFXRRWCeOkDSoJKr.7z", "https://files.catbox.moe/n0xat9.7z", "https://files.vc/d/dl?hash=cbdf8266d6ab7efffa00250a82526a88", "https://pomf2.lain.la/f/4fuhcwx.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "Let No One Want What I Have",
+        url: ["https://archive.org/details/1751933116_let_no_one_want_what_i_have", "https://fileditchfiles.me/file.php?f=/s23/PaIukLLrbBzFfAwxAiHV.7z", "https://files.catbox.moe/2o0esf.7z", "https://files.vc/d/dl?hash=cc79e6998d29f29126e9e0d254f1ad61", "https://pomf2.lain.la/f/m8vfzkq5.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "Lowlands of Hteklum",
+        url: ["https://archive.org/details/1751933259_lowlands_of_hteklum", "https://fileditchfiles.me/file.php?f=/s23/srHvunboCHegdHwIiryz.7z", "https://files.catbox.moe/qaasa8.7z", "https://files.vc/d/dl?hash=6680cf195fa550e141e50a1bf847bfb6", "https://pomf2.lain.la/f/4w4o7iw.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "Old Norse Mara",
+        url: ["https://archive.org/details/1751933567_old_norse_mara", "https://fileditchfiles.me/file.php?f=/s23/XUQIswUvcuRBPtLppLZg.7z", "https://files.catbox.moe/7v7l4b.7z", "https://files.vc/d/dl?hash=b26dde48e763e3473e8f53cc5a985602", "https://pomf2.lain.la/f/dzb12nz6.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "Pus Ch'en",
+        url: ["https://archive.org/details/1751933797_pus_ch_en", "https://fileditchfiles.me/file.php?f=/s23/CNIRBseQZTUcqLnBHG.7z", "https://files.catbox.moe/nowvvu.7z", "https://files.vc/d/dl?hash=026d4bce9584a76c809c6dc7bde1790e", "https://pomf2.lain.la/f/bwu2lltf.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Rawskulled",
+        url: ["https://archive.org/details/1751934176_rawskulled", "https://fileditchfiles.me/file.php?f=/s23/oLzKINKhtlbkeWlRnfBP.7z", "https://files.vc/d/dl?hash=9f9d8122892913d6f419914bc4216561", "https://pomf2.lain.la/f/0y1w6mi.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "The Divine Vine Tapes",
+        url: ["https://archive.org/details/1751934710_the_divine_vine_tapes", "https://fileditchfiles.me/file.php?f=/s23/uzdIkOpskelZyHwpNbIC.7z", "https://files.catbox.moe/hozdo3.7z", "https://files.vc/d/dl?hash=462d1fb6aab9e90f62976330eedb9987", "https://pomf2.lain.la/f/gsryj9q5.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "The Man Who Drank God",
+        url: ["https://archive.org/details/1751934876_the_man_who_drank_god", "https://fileditchfiles.me/file.php?f=/s23/XfIzwNWBDspxzInlmgtu.7z", "https://files.catbox.moe/97f218.7z", "https://files.vc/d/dl?hash=9075c8e09ab0a432518812583b61d633", "https://pomf2.lain.la/f/5pcw9pt.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "The Totemist",
+        url: ["https://archive.org/details/1751935203_the_totemist", "https://fileditchfiles.me/file.php?f=/b55/zJYMppPCoFkNXpQbTTcs.7z", "https://files.vc/d/dl?hash=15f0eece6bea306760de1b617ba66658", "https://pomf2.lain.la/f/e2xqlocj.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Transitory Collection Vol II",
+        url: ["https://archive.org/details/1751936497_transitory_collection_vol_ii", "https://fileditchfiles.me/file.php?f=/s23/oBZOQXipnfKUFWprsfPw.7z", "https://files.vc/d/dl?hash=db8b9a688f7a8b55ffc2d07598c701a1", "https://pomf2.lain.la/f/h36ugv56.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Transitory Tape Collection Vol. 1",
+        url: ["https://archive.org/details/1751937110_transitory_tape_collection_vol__1", "https://fileditchfiles.me/file.php?f=/s23/JyjyIzaGuEwwAWwEqFnm.7z", "https://files.catbox.moe/eskux3.7z", "https://files.vc/d/dl?hash=2a1ee73a931754a75454517465187b1d", "https://pomf2.lain.la/f/vsag356x.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "Transmissions from Boshqa",
+        url: ["https://archive.org/details/1751937295_transmissions_from_boshqa", "https://fileditchfiles.me/file.php?f=/s23/rzvgACHjuHXAuRoWCWxK.7z", "https://files.catbox.moe/804hkh.7z", "https://files.vc/d/dl?hash=84151d809cb768066a434239305c76ad", "https://pomf2.lain.la/f/de2x012b.7z"],
+        description: "",
+        tags: ["MP3"]
+      },
+      {
+        title: "TT019: Adderall Canyonly / Ak'chamel",
+        url: ["https://archive.org/details/1751937504_tt019_adderall_canyonly__akchamel", "https://fileditchfiles.me/file.php?f=/s23/AysHeyrWzhBZyPIcUhKM.7z", "https://files.catbox.moe/fuub3i.7z", "https://files.vc/d/dl?hash=5fbe56fca00694c341c32d5d177eace7", "https://pomf2.lain.la/f/72tpems2.7z"],
+        description: "",
+        tags: ["MP3"]
       }
     ]
   },
@@ -2740,6 +2894,23 @@ const linksData = [
     ]
   },
   {
+    category: "Bearer of the Inmost Sun",
+    links: [
+      {
+        title: "Folder",
+        url: ["https:///pzzdnjknudr7"],
+        description: "",
+        tags: []
+      },
+      {
+        title: "Destroyed Beauty",
+        url: ["https://archive.org/details/1748540123_destroyed_beauty", "https://fileditchfiles.me/file.php?f=/s23/WRbZGNcaHOHxyWvnszeQ.7z", "https://files.catbox.moe/iijedv.7z", "https://files.vc/d/dl?hash=e0b017ba87af98ab5eb55aa677c51731", "https://pomf2.lain.la/f/qe0evqax.7z"],
+        description: "",
+        tags: ["MP3"]
+      }
+    ]
+  },
+  {
     category: "BizarreϟϟMania",
     links: [
       {
@@ -4079,7 +4250,7 @@ const linksData = [
       },
       {
         title: "Nothing Changes, No One Can Change Anything, I Am Ever-Changing, Only You Can Change Yourself",
-        url: ["https://archive.org/details/1748274318_nothing_changes_no_one_can_change_anything__i_am_e","https://fileditchfiles.me/file.php?f=/b53/qlJlJDuUmDxKDTUdKAqu.7z", "https://files.vc/d/dl?hash=e335ecaa2962305693bc8ee9584fd460"],
+        url: ["https://archive.org/details/1748274318_nothing_changes_no_one_can_change_anything__i_am_e", "https://fileditchfiles.me/file.php?f=/b53/qlJlJDuUmDxKDTUdKAqu.7z", "https://files.vc/d/dl?hash=e335ecaa2962305693bc8ee9584fd460"],
         description: "",
         tags: ["FLAC"]
       },
@@ -4209,19 +4380,19 @@ const linksData = [
       },
       {
         title: "Ji No Hibiki [地の響]",
-        url: ["https://archive.org/details/1748289825_ji_no_hibiki______","https://fileditchfiles.me/file.php?f=/s22/RkNTfxWWDXWvGMzqHge.7z", "https://files.vc/d/dl?hash=456e4558095d3346342af9565a377470", "https://pomf2.lain.la/f/l6w15rfo.7z"],
+        url: ["https://archive.org/details/1748289825_ji_no_hibiki______", "https://fileditchfiles.me/file.php?f=/s22/RkNTfxWWDXWvGMzqHge.7z", "https://files.vc/d/dl?hash=456e4558095d3346342af9565a377470", "https://pomf2.lain.la/f/l6w15rfo.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Live ''Hirakareta Gassho'' Junen No Tenkai [ライブ ''開かれた合唱'' 十年の展開]",
-        url: ["https://archive.org/details/1748297229_live_hirakareta_gassho_junen_no_tenkai____________","https://fileditchfiles.me/file.php?f=/s22/EfnmQUtfbTwcTXqLulfn.7z", "https://files.vc/d/dl?hash=5341fd73d927bba7791c13283305bc8b", "https://pomf2.lain.la/f/dj0cr8cz.7z"],
+        url: ["https://archive.org/details/1748297229_live_hirakareta_gassho_junen_no_tenkai____________", "https://fileditchfiles.me/file.php?f=/s22/EfnmQUtfbTwcTXqLulfn.7z", "https://files.vc/d/dl?hash=5341fd73d927bba7791c13283305bc8b", "https://pomf2.lain.la/f/dj0cr8cz.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Ōgonrin Sanyō [黄金鱗讃揚]",
-        url: ["https://archive.org/details/1748306869__gonrin_sany_________","https://fileditchfiles.me/file.php?f=/s22/uFctFxcBucQktCLQFhN.7z", "https://files.catbox.moe/3mov86.7z", "https://files.vc/d/dl?hash=521571b7c49f0b9482d0d33a2bac4759", "https://pomf2.lain.la/f/r6ca6cz.7z"],
+        url: ["https://archive.org/details/1748306869__gonrin_sany_________", "https://fileditchfiles.me/file.php?f=/s22/uFctFxcBucQktCLQFhN.7z", "https://files.catbox.moe/3mov86.7z", "https://files.vc/d/dl?hash=521571b7c49f0b9482d0d33a2bac4759", "https://pomf2.lain.la/f/r6ca6cz.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -4276,261 +4447,6 @@ const linksData = [
     ]
   },
   {
-  category: "Bearer of the Inmost Sun",
-  links: [
-        {
-          title: "Folder",
-          url: ["https:///pzzdnjknudr7"],
-          description: "",
-          tags: []
-        },
-        {
-          title: "Destroyed Beauty",
-          url: ["https://archive.org/details/1748540123_destroyed_beauty", "https://pomf2.lain.la/f/qe0evqax.7z", "https://files.catbox.moe/iijedv.7z", "https://fileditchfiles.me/file.php?f=/s23/WRbZGNcaHOHxyWvnszeQ.7z", "https://files.vc/d/dl?hash=e0b017ba87af98ab5eb55aa677c51731"],
-          description: "",
-          tags: ["MP3"]
-        }
-  ]
-},
-{
-  category: "Ludovic",
-  links: [
-        {
-          title: "Folder",
-          url: ["https://buzzheavier.com/9ubxx4dnkps5"],
-          description: "",
-          tags: []
-        },
-        {
-          title: "Idioma Morto",
-          url: ["https://archive.org/details/1751399643_idioma_morto", "https://pomf2.lain.la/f/f3uyz03w.7z", "https://fileditchfiles.me/file.php?f=/b54/RASsVDYriEqnCuOSs.7z", "https://files.vc/d/dl?hash=a1caaeda192512209be89584d67d6cfd"],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Servil",
-          url: ["https://archive.org/details/1751402043_servil", "https://pomf2.lain.la/f/kanbe99x.7z", "https://fileditchfiles.me/file.php?f=/s23/knoEYmOMihxCmKJWWQlP.7z", "https://files.vc/d/dl?hash=5c503cc882e2edde6d440f7456ab787d"],
-          description: "",
-          tags: ["FLAC"]
-        }
-  ]
-},
-{
-  category: "エムお塁",
-  links: [
-        {
-          title: "Folder",
-          url: [""],
-          description: "",
-          tags: []
-        },
-        {
-          title: "まじドングリCM",
-          url: ["https://archive.org/details/1748540607_20241024______0240_118_110_20241024_1721_______-__",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Pocky",
-          url: ["https://archive.org/details/1748541302_m_l___-_pocky",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "White   Zoren",
-          url: ["https://archive.org/details/1748541486_mrdz_octvillian_-_____-_white_zoren",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Purpla   Glou",
-          url: ["https://archive.org/details/1748540137_sleep_nown_-_purpla_glou",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "融眉",
-          url: ["https://archive.org/details/1748542625_t_h_m_h_bbyugzl_-___",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "傘実",
-          url: ["https://archive.org/details/1748543388__g_-___",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "aGue R",
-          url: ["https://archive.org/details/1748547424__m_-_ague_r",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "寒巻",
-          url: ["https://archive.org/details/1748550585______________tt___-___",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "\"?   ? I ?",
-          url: ["https://archive.org/details/1748544503______-_-_-_i_-",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "All Trophynzp",
-          url: ["https://archive.org/details/1748544552______-_all_trophynzp",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Grossam",
-          url: ["https://archive.org/details/1748546386______-_grossam",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Mammoiey. S    23  12  22  1235",
-          url: ["https://archive.org/details/1748548857______-_mammoiey__s_23_12_22_1235",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "MESUDTH  RYINET",
-          url: ["https://archive.org/details/1748548966______-_mesudth_ryinet",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "World  - M elon",
-          url: ["https://archive.org/details/1748549515______-_world_-_m_elon",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "〜近所迷惑　ザ　改〜　　　M・L・ヤバス",
-          url: ["https://archive.org/details/1748550265______-_____________m_l_____",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "とあるレモンとお通しの",
-          url: ["https://archive.org/details/1748549729______-____________",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "ホヤホヤブンス",
-          url: ["https://archive.org/details/1748549421______-_________",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "ムンぷくり　夏膨",
-          url: ["https://archive.org/details/1748549484______-__________",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "星降る戻屑　　　用頭途",
-          url: ["https://archive.org/details/1748550104______-__________",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "氣刄",
-          url: ["https://archive.org/details/1748550183______-___",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "開けんな",
-          url: ["https://archive.org/details/1748550415______-_____",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "🟣　Shower Da",
-          url: ["https://archive.org/details/1748549747______-___shower_da",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Santa Maria   +  naked palucu",
-          url: ["https://archive.org/details/1748544332________-_santa_maria___naked_palucu",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "俺らの",
-          url: ["https://archive.org/details/1748540151_____________with_______-____",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "M.Lんド のライブアルバムやでー",
-          url: ["https://archive.org/details/1748553326_____-_m_l______________",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Shared Summer Voice     ✔️",
-          url: ["https://archive.org/details/1748555406___________flaomw________-_dengelta____-_shared_sum",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "サーカス",
-          url: ["https://archive.org/details/1748565947_______-_____",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Surcal   Uveay",
-          url: ["https://archive.org/details/1748568167___________-_surcal_uveay",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "～ 11;11 Sratt　　ノンアップラサイコウオン　(23' 5-18-13 ,57)を次いで ～",
-          url: ["https://archive.org/details/1748573210_____-___11_11_sratt________________23__5-18-13_-57",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "尋坊",
-          url: ["https://archive.org/details/1748568966___________-___",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Ever Gavo Me の BrLl",
-          url: ["https://archive.org/details/1748571098________-_ever_gavo_me___brll",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "吾麻磨簀",
-          url: ["https://archive.org/details/1748572535____-_____",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "Vicesk",
-          url: ["https://archive.org/details/1748571105____-_vicesk",],
-          description: "",
-          tags: ["FLAC"]
-        },
-        {
-          title: "稚遅 ⭐︎ 戻",
-          url: ["https://archive.org/details/1748572607_______-________",],
-          description: "",
-          tags: ["FLAC"]
-        }
-  ]
-},
-  {
     category: "Ghédalia Tazartès",
     links: [
       {
@@ -4577,13 +4493,13 @@ const linksData = [
       },
       {
         title: "Diasporas",
-        url: ["https://archive.org/details/1748393704_diasporas","https://fileditchfiles.me/file.php?f=/s22/GeYBglFJqVwQROeNpcxd.7z", "https://files.vc/d/dl?hash=9dbadaa9309c7439a398c3732c8be63e", "https://pomf2.lain.la/f/npt9rxni.7z"],
+        url: ["https://archive.org/details/1748393704_diasporas", "https://fileditchfiles.me/file.php?f=/s22/GeYBglFJqVwQROeNpcxd.7z", "https://files.vc/d/dl?hash=9dbadaa9309c7439a398c3732c8be63e", "https://pomf2.lain.la/f/npt9rxni.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Gospel et le râteau",
-        url: ["https://archive.org/details/1748372404_gospel_et_le_r_teau","https://fileditchfiles.me/file.php?f=/s22/AmBSHtaJDmFWNheAFAp.7z", "https://files.vc/d/dl?hash=65c643548f468fc593be14cf31652470", "https://pomf2.lain.la/f/4epxwng7.7z"],
+        url: ["https://archive.org/details/1748372404_gospel_et_le_r_teau", "https://fileditchfiles.me/file.php?f=/s22/AmBSHtaJDmFWNheAFAp.7z", "https://files.vc/d/dl?hash=65c643548f468fc593be14cf31652470", "https://pomf2.lain.la/f/4epxwng7.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -6022,6 +5938,29 @@ const linksData = [
         url: ["https://fileditchfiles.me/file.php?f=/s22/zLsTFlrwIBzEjauGGLZ.7z", "https://files.catbox.moe/vtsr3g.7z", "https://files.vc/d/dl?hash=e569e5369f877745637ecc98b93e6e82", "https://pomf2.lain.la/f/e2xn2idy.7z"],
         description: "",
         tags: ["MP3"]
+      }
+    ]
+  },
+  {
+    category: "Ludovic",
+    links: [
+      {
+        title: "Folder",
+        url: ["https://buzzheavier.com/9ubxx4dnkps5"],
+        description: "",
+        tags: []
+      },
+      {
+        title: "Idioma Morto",
+        url: ["https://archive.org/details/1751399643_idioma_morto", "https://fileditchfiles.me/file.php?f=/b54/RASsVDYriEqnCuOSs.7z", "https://files.vc/d/dl?hash=a1caaeda192512209be89584d67d6cfd", "https://pomf2.lain.la/f/f3uyz03w.7z"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Servil",
+        url: ["https://archive.org/details/1751402043_servil", "https://fileditchfiles.me/file.php?f=/s23/knoEYmOMihxCmKJWWQlP.7z", "https://files.vc/d/dl?hash=5c503cc882e2edde6d440f7456ab787d", "https://pomf2.lain.la/f/kanbe99x.7z"],
+        description: "",
+        tags: ["FLAC"]
       }
     ]
   },
@@ -8197,6 +8136,17 @@ const linksData = [
     ]
   },
   {
+    category: "Sumer",
+    links: [
+      {
+        title: "Iraq",
+        url: ["https://archive.org/details/1752171692_iraq", "https://fileditchfiles.me/file.php?f=/s23/BnPmJBIsFErTewUFbGkZ.7z", "https://files.vc/d/dl?hash=cb78fe362548ba256b26c031b806be7b", "https://pomf2.lain.la/f/cda4lsd.7z"],
+        description: "",
+        tags: ["FLAC"]
+      }
+    ]
+  },
+  {
     category: "Supersilent",
     links: [
       {
@@ -9751,7 +9701,7 @@ const linksData = [
       },
       {
         title: "...And to Speak the Truth or Die",
-        url: ["https://archive.org/details/1748644110_zeffon_-_and_to_speak_the_truth_or_die",],
+        url: ["https://archive.org/details/1748644110_zeffon_-_and_to_speak_the_truth_or_die"],
         description: "",
         tags: ["FLAC"]
       },
@@ -9763,7 +9713,7 @@ const linksData = [
       },
       {
         title: "0x01_PEELING Curse",
-        url: ["https://archive.org/details/1748595729_revenence_-_0x01_peeling_curse",],
+        url: ["https://archive.org/details/1748595729_revenence_-_0x01_peeling_curse"],
         description: "",
         tags: ["FLAC"]
       },
@@ -9805,19 +9755,19 @@ const linksData = [
       },
       {
         title: "33/12",
-        url: ["https://archive.org/details/1748604839_zeffon_-_33-12","https://fileditchfiles.me/file.php?f=/s22/trjCbmqEKUUYfsEMvML.7z", "https://files.catbox.moe/lbkfse.7z", "https://files.vc/d/dl?hash=dd125b4139c54de0242f2f257202a5c9", "https://pomf2.lain.la/f/mdowfgk6.7z"],
+        url: ["https://archive.org/details/1748604839_zeffon_-_33-12", "https://fileditchfiles.me/file.php?f=/s22/trjCbmqEKUUYfsEMvML.7z", "https://files.catbox.moe/lbkfse.7z", "https://files.vc/d/dl?hash=dd125b4139c54de0242f2f257202a5c9", "https://pomf2.lain.la/f/mdowfgk6.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "4569h/w/ptrace",
-        url: ["https://archive.org/details/1748610562_zeffon_-_4569h-w-ptrace","https://fileditchfiles.me/file.php?f=/s22/vGoHcxKJLraJHGcVJiuO.7z", "https://files.catbox.moe/jckl8m.7z", "https://files.vc/d/dl?hash=1d11bac73df1faea7af54a5662b7e1b1", "https://pomf2.lain.la/f/h7ipyqeh.7z"],
+        url: ["https://archive.org/details/1748610562_zeffon_-_4569h-w-ptrace", "https://fileditchfiles.me/file.php?f=/s22/vGoHcxKJLraJHGcVJiuO.7z", "https://files.catbox.moe/jckl8m.7z", "https://files.vc/d/dl?hash=1d11bac73df1faea7af54a5662b7e1b1", "https://pomf2.lain.la/f/h7ipyqeh.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "54/21/24 (Mzweet Quantity)",
-        url: ["https://archive.org/details/1748605448_zeffon_-_54-21-24__mzweet_quantity_","https://fileditchfiles.me/file.php?f=/s22/riUPUiUuzgsLubqerkQ.7z", "https://files.vc/d/dl?hash=c53d1ea6b92d0d8ff1dfc23cd1a2b729", "https://pomf2.lain.la/f/32oiu0lu.7z"],
+        url: ["https://archive.org/details/1748605448_zeffon_-_54-21-24__mzweet_quantity_", "https://fileditchfiles.me/file.php?f=/s22/riUPUiUuzgsLubqerkQ.7z", "https://files.vc/d/dl?hash=c53d1ea6b92d0d8ff1dfc23cd1a2b729", "https://pomf2.lain.la/f/32oiu0lu.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -9835,13 +9785,13 @@ const linksData = [
       },
       {
         title: "76/86/13A",
-        url: ["https://archive.org/details/1748581423_serpentmouth_-_76-86-13a",],
+        url: ["https://archive.org/details/1748581423_serpentmouth_-_76-86-13a"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "93/912GA",
-        url: ["https://archive.org/details/1748606677_zeffon_-_93-912ga","https://fileditchfiles.me/file.php?f=/s22/mBkjOthMdXoocKBXbiGy.7z", "https://files.vc/d/dl?hash=f2546274fafd86eccea4f8ea4b183482", "https://pomf2.lain.la/f/nm4ia1l.7z"],
+        url: ["https://archive.org/details/1748606677_zeffon_-_93-912ga", "https://fileditchfiles.me/file.php?f=/s22/mBkjOthMdXoocKBXbiGy.7z", "https://files.vc/d/dl?hash=f2546274fafd86eccea4f8ea4b183482", "https://pomf2.lain.la/f/nm4ia1l.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -9853,25 +9803,25 @@ const linksData = [
       },
       {
         title: "9999900 (Modulation IV)",
-        url: ["https://archive.org/details/1748610794_zeffon_-_9999900__modulation_iv_", "https://pomf2.lain.la/f/fht1w63f.7z", "https://fileditchfiles.me/file.php?f=/s23/MbEXKtgBSnCJjoiRdiDP.7z", "https://files.vc/d/dl?hash=438cb389eb1fa8f3a44520717eaa9797"],
+        url: ["https://archive.org/details/1748610794_zeffon_-_9999900__modulation_iv_", "https://fileditchfiles.me/file.php?f=/s23/MbEXKtgBSnCJjoiRdiDP.7z", "https://files.vc/d/dl?hash=438cb389eb1fa8f3a44520717eaa9797", "https://pomf2.lain.la/f/fht1w63f.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "A",
-        url: ["https://archive.org/details/1748600969_revenence_-_argon_beams_-_serpentmouth_-_a", "https://pomf2.lain.la/f/45o2som.7z", "https://fileditchfiles.me/file.php?f=/s23/gdiUdOOVvbceZxdGtKQi.7z", "https://files.vc/d/dl?hash=91c157446efb9b948af2f6c5798aa57b"],
+        url: ["https://archive.org/details/1748600969_revenence_-_argon_beams_-_serpentmouth_-_a", "https://fileditchfiles.me/file.php?f=/s23/gdiUdOOVvbceZxdGtKQi.7z", "https://files.vc/d/dl?hash=91c157446efb9b948af2f6c5798aa57b", "https://pomf2.lain.la/f/45o2som.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "A Brand of Violence",
-        url: ["https://archive.org/details/1748612093_zeffon_-_a_brand_of_violence","https://fileditchfiles.me/file.php?f=/s22/TodNCEQvYCcQvfQmLWE.7z", "https://files.catbox.moe/nuouz2.7z", "https://files.vc/d/dl?hash=b945dea920cbcf599ad055c3e2eb21c6", "https://pomf2.lain.la/f/yi2js5rv.7z"],
+        url: ["https://archive.org/details/1748612093_zeffon_-_a_brand_of_violence", "https://fileditchfiles.me/file.php?f=/s22/TodNCEQvYCcQvfQmLWE.7z", "https://files.catbox.moe/nuouz2.7z", "https://files.vc/d/dl?hash=b945dea920cbcf599ad055c3e2eb21c6", "https://pomf2.lain.la/f/yi2js5rv.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "A Forest-Desert in the Middle of Nowhere",
-        url: ["https://archive.org/details/1748612286_zeffon_-_a_forest-desert_in_the_middle_of_nowhere", "https://pomf2.lain.la/f/fhiyu426.7z", "https://fileditchfiles.me/file.php?f=/s23/OUwOADNnYvqfZoZzBkCt.7z", "https://files.vc/d/dl?hash=795aafd2e212e6addcfa864724e3c997"],
+        url: ["https://archive.org/details/1748612286_zeffon_-_a_forest-desert_in_the_middle_of_nowhere", "https://fileditchfiles.me/file.php?f=/s23/OUwOADNnYvqfZoZzBkCt.7z", "https://files.vc/d/dl?hash=795aafd2e212e6addcfa864724e3c997", "https://pomf2.lain.la/f/fhiyu426.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -9883,7 +9833,7 @@ const linksData = [
       },
       {
         title: "A Momentary Lapse of Judgement",
-        url: ["https://archive.org/details/1748613079_zeffon_-_a_momentary_lapse_of_judgement",],
+        url: ["https://archive.org/details/1748613079_zeffon_-_a_momentary_lapse_of_judgement"],
         description: "",
         tags: ["FLAC"]
       },
@@ -9901,19 +9851,19 @@ const linksData = [
       },
       {
         title: "Abashsacradejermenttut",
-        url: ["https://archive.org/details/1748623330_zeffon_-_abashsacradejermenttut", "https://pomf2.lain.la/f/hblb7u1.7z", "https://fileditchfiles.me/file.php?f=/s23/iVKkEsRqbFodZLzBbXHA.7z", "https://files.vc/d/dl?hash=044e6e7a6a4c6c9a65d514d53f96381e"],
+        url: ["https://archive.org/details/1748623330_zeffon_-_abashsacradejermenttut", "https://fileditchfiles.me/file.php?f=/s23/iVKkEsRqbFodZLzBbXHA.7z", "https://files.vc/d/dl?hash=044e6e7a6a4c6c9a65d514d53f96381e", "https://pomf2.lain.la/f/hblb7u1.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Above All",
-        url: ["https://archive.org/details/1748624104_zeffon_-_above_all",],
+        url: ["https://archive.org/details/1748624104_zeffon_-_above_all"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Abstract Frxxü (Ёумтжд - Тгуоч Зрпамричац V)",
-        url: ["https://archive.org/details/1748624700_zeffon_-_abstract_frxx__________-_________________", "https://pomf2.lain.la/f/7k1fj72o.7z", "https://fileditchfiles.me/file.php?f=/s23/NCYLJyrEKxMIsbsHxceY.7z", "https://files.vc/d/dl?hash=57e0712faaf4a347e21d7c6a4880343c"],
+        url: ["https://archive.org/details/1748624700_zeffon_-_abstract_frxx__________-_________________", "https://fileditchfiles.me/file.php?f=/s23/NCYLJyrEKxMIsbsHxceY.7z", "https://files.vc/d/dl?hash=57e0712faaf4a347e21d7c6a4880343c", "https://pomf2.lain.la/f/7k1fj72o.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10003,73 +9953,73 @@ const linksData = [
       },
       {
         title: "Alien Tombstone",
-        url: ["https://archive.org/details/1748625128_zeffon_-_alien_tombstone", "https://pomf2.lain.la/f/0flwqn5b.7z", "https://files.catbox.moe/2zobgo.7z", "https://fileditchfiles.me/file.php?f=/s23/VoLCIYKFHPvSVLtRDRht.7z", "https://files.vc/d/dl?hash=ddf578fc926a26e883ae7b4e66ef9250"],
+        url: ["https://archive.org/details/1748625128_zeffon_-_alien_tombstone", "https://fileditchfiles.me/file.php?f=/s23/VoLCIYKFHPvSVLtRDRht.7z", "https://files.catbox.moe/2zobgo.7z", "https://files.vc/d/dl?hash=ddf578fc926a26e883ae7b4e66ef9250", "https://pomf2.lain.la/f/0flwqn5b.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Alive and Kicking",
-        url: ["https://archive.org/details/1748625752_zeffon_-_alive_and_kicking", "https://pomf2.lain.la/f/7i89yccv.7z", "https://fileditchfiles.me/file.php?f=/s23/bbkefUNSNxABFZPlfZT.7z", "https://files.vc/d/dl?hash=662208868128191cdbab1973c8b2c54e"],
+        url: ["https://archive.org/details/1748625752_zeffon_-_alive_and_kicking", "https://fileditchfiles.me/file.php?f=/s23/bbkefUNSNxABFZPlfZT.7z", "https://files.vc/d/dl?hash=662208868128191cdbab1973c8b2c54e", "https://pomf2.lain.la/f/7i89yccv.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Amber Fall",
-        url: ["https://archive.org/details/1748626933_zeffon_-_amber_fall",],
+        url: ["https://archive.org/details/1748626933_zeffon_-_amber_fall"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Amnesia Memortria",
-        url: ["https://archive.org/details/1748635532_zeffon_-_amnesia_memortria", "https://pomf2.lain.la/f/ves7y6jg.7z", "https://fileditchfiles.me/file.php?f=/s23/zjDFLPYDgtsThFykGTLj.7z", "https://files.vc/d/dl?hash=e2ff02c4b8b6d541837137299f4a085c"],
+        url: ["https://archive.org/details/1748635532_zeffon_-_amnesia_memortria", "https://fileditchfiles.me/file.php?f=/s23/zjDFLPYDgtsThFykGTLj.7z", "https://files.vc/d/dl?hash=e2ff02c4b8b6d541837137299f4a085c", "https://pomf2.lain.la/f/ves7y6jg.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Amphibian",
-        url: ["https://archive.org/details/1748637884_zeffon_-_amphibian",],
+        url: ["https://archive.org/details/1748637884_zeffon_-_amphibian"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Anatomy of Body, Mountains Quake Under Foot of Pig",
-        url: ["https://archive.org/details/1748626306_zeffon_-_anatomy_of_body-_mountains_quake_under_fo",],
+        url: ["https://archive.org/details/1748626306_zeffon_-_anatomy_of_body-_mountains_quake_under_fo"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Ancient Humans",
-        url: ["https://archive.org/details/1748642077_zeffon_-_ancient_humans",],
+        url: ["https://archive.org/details/1748642077_zeffon_-_ancient_humans"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Antarctic",
-        url: ["https://archive.org/details/1748648203_zeffon_-_antarctic", "https://pomf2.lain.la/f/8fwa5wh0.7z", "https://fileditchfiles.me/file.php?f=/s23/mPxumbXbgnNFXFbmZGm.7z", "https://files.vc/d/dl?hash=b8652f15b30904ed5bb7a1c8581559fd"],
+        url: ["https://archive.org/details/1748648203_zeffon_-_antarctic", "https://fileditchfiles.me/file.php?f=/s23/mPxumbXbgnNFXFbmZGm.7z", "https://files.vc/d/dl?hash=b8652f15b30904ed5bb7a1c8581559fd", "https://pomf2.lain.la/f/8fwa5wh0.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Anti-haëëëëëëëdless Sanderz G.I. Through... (Manipura=Ёумтжд - Тгуоч Зрпамричац XII)",
-        url: ["https://archive.org/details/1748650131_zeffon_-_anti-ha_______dless_sanderz_g_i__through_",],
+        url: ["https://archive.org/details/1748650131_zeffon_-_anti-ha_______dless_sanderz_g_i__through_"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Apathy",
-        url: ["https://archive.org/details/1748660071_zeffon_-_apathy", "https://pomf2.lain.la/f/xbprtb65.7z", "https://files.catbox.moe/a398gz.7z", "https://fileditchfiles.me/file.php?f=/s23/zOsgIZVAhcKXwwmYoHJe.7z", "https://files.vc/d/dl?hash=508a468ba907f5af6e09159f9aed5458"],
+        url: ["https://archive.org/details/1748660071_zeffon_-_apathy", "https://fileditchfiles.me/file.php?f=/s23/zOsgIZVAhcKXwwmYoHJe.7z", "https://files.catbox.moe/a398gz.7z", "https://files.vc/d/dl?hash=508a468ba907f5af6e09159f9aed5458", "https://pomf2.lain.la/f/xbprtb65.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Applause",
-        url: ["https://archive.org/details/1748660924_zeffon_-_applause",],
+        url: ["https://archive.org/details/1748660924_zeffon_-_applause"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Apple",
-        url: ["https://archive.org/details/1748599437_revenence_-_apple", "https://pomf2.lain.la/f/qyxi8r91.7z", "https://fileditchfiles.me/file.php?f=/s23/MiFpJKdVUpJmGxsQeryo.7z", "https://files.vc/d/dl?hash=70a4df0317c6c4f8eec849ecf9df55dd"],
+        url: ["https://archive.org/details/1748599437_revenence_-_apple", "https://fileditchfiles.me/file.php?f=/s23/MiFpJKdVUpJmGxsQeryo.7z", "https://files.vc/d/dl?hash=70a4df0317c6c4f8eec849ecf9df55dd", "https://pomf2.lain.la/f/qyxi8r91.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10117,7 +10067,7 @@ const linksData = [
       },
       {
         title: "Autumn Arcticx3 Havoc (The Shard of Graphene Jade via Tomb, Ёумтжд - Тгуоч Зрпамричац VIII)",
-        url: ["https://archive.org/details/1748578852_generated_missi_n_zfn_-_autumn_arcticx3_havoc__the",],
+        url: ["https://archive.org/details/1748578852_generated_missi_n_zfn_-_autumn_arcticx3_havoc__the"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10147,13 +10097,13 @@ const linksData = [
       },
       {
         title: "B (Ever-changing)",
-        url: ["https://archive.org/details/1748589712_serpentmouth_-_b__ever-changing_",],
+        url: ["https://archive.org/details/1748589712_serpentmouth_-_b__ever-changing_"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "B Malaise/Malice (Chaosfoundry V = Seasons IV)",
-        url: ["https://archive.org/details/1748602172_revenence_-_b_malaise-malice__chaosfoundry_v_-_sea",],
+        url: ["https://archive.org/details/1748602172_revenence_-_b_malaise-malice__chaosfoundry_v_-_sea"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10183,13 +10133,13 @@ const linksData = [
       },
       {
         title: "Beluga Whale Stomach",
-        url: ["https://archive.org/details/1748605722_revenence_-_beluga_whale_stomach", "https://pomf2.lain.la/f/p1rov8l.7z", "https://files.catbox.moe/01og2q.7z", "https://fileditchfiles.me/file.php?f=/s23/DtySOHEFkWaQQjvlPBf.7z", "https://files.vc/d/dl?hash=892e16ccc1492f110875972de8b6029f"],
+        url: ["https://archive.org/details/1748605722_revenence_-_beluga_whale_stomach", "https://fileditchfiles.me/file.php?f=/s23/DtySOHEFkWaQQjvlPBf.7z", "https://files.catbox.moe/01og2q.7z", "https://files.vc/d/dl?hash=892e16ccc1492f110875972de8b6029f", "https://pomf2.lain.la/f/p1rov8l.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Bera Mawr",
-        url: ["https://archive.org/details/1748654669_zeffon_-_bera_mawr",],
+        url: ["https://archive.org/details/1748654669_zeffon_-_bera_mawr"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10201,19 +10151,19 @@ const linksData = [
       },
       {
         title: "Beyond the Realms of Sharmiah",
-        url: ["https://archive.org/details/1748661797_zeffon_-_beyond_the_realms_of_sharmiah", "https://pomf2.lain.la/f/xxbm75t1.7z", "https://fileditchfiles.me/file.php?f=/s23/sAJQgwNopiUYqAGoxuvl.7z", "https://files.vc/d/dl?hash=4f5ffe2ece699566da3ffc64d1855415"],
+        url: ["https://archive.org/details/1748661797_zeffon_-_beyond_the_realms_of_sharmiah", "https://fileditchfiles.me/file.php?f=/s23/sAJQgwNopiUYqAGoxuvl.7z", "https://files.vc/d/dl?hash=4f5ffe2ece699566da3ffc64d1855415", "https://pomf2.lain.la/f/xxbm75t1.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Bichimaera Isabelline",
-        url: ["https://archive.org/details/1748658357_zeffon_-_bichimaera_isabelline",],
+        url: ["https://archive.org/details/1748658357_zeffon_-_bichimaera_isabelline"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Bitter Almond Factories Given Substantial Grąwth Via Khanate (Modulation II)",
-        url: ["https://archive.org/details/1748662932_zeffon_-_bitter_almond_factories_given_substantial",],
+        url: ["https://archive.org/details/1748662932_zeffon_-_bitter_almond_factories_given_substantial"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10225,7 +10175,7 @@ const linksData = [
       },
       {
         title: "Black Shroud of the Restorer",
-        url: ["https://archive.org/details/1748671265_zeffon_-_black_shroud_of_the_restorer",],
+        url: ["https://archive.org/details/1748671265_zeffon_-_black_shroud_of_the_restorer"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10237,13 +10187,13 @@ const linksData = [
       },
       {
         title: "Blackened",
-        url: ["https://archive.org/details/1748673754_zeffon_-_blackened", "https://pomf2.lain.la/f/m58qbiae.7z", "https://fileditchfiles.me/file.php?f=/s23/RPdcCnbKBwawlkSWhqfF.7z", "https://files.vc/d/dl?hash=98e60f55ee4c38caa547ef9187eacc57"],
+        url: ["https://archive.org/details/1748673754_zeffon_-_blackened", "https://fileditchfiles.me/file.php?f=/s23/RPdcCnbKBwawlkSWhqfF.7z", "https://files.vc/d/dl?hash=98e60f55ee4c38caa547ef9187eacc57", "https://pomf2.lain.la/f/m58qbiae.7z"],
         description: "",
         tags: ["FLAC"]
       },
       {
         title: "Blood Drips From the Leaves",
-        url: ["https://archive.org/details/1748674519_zeffon_-_blood_drips_from_the_leaves", "https://pomf2.lain.la/f/m3mzaahf.7z", "https://fileditchfiles.me/file.php?f=/b55/ecqMvHfUuUicXDkPMNIC.7z", "https://files.vc/d/dl?hash=b8e683f06957cb635bdfcdcd5dbaaf82"],
+        url: ["https://archive.org/details/1748674519_zeffon_-_blood_drips_from_the_leaves", "https://fileditchfiles.me/file.php?f=/b55/ecqMvHfUuUicXDkPMNIC.7z", "https://files.vc/d/dl?hash=b8e683f06957cb635bdfcdcd5dbaaf82", "https://pomf2.lain.la/f/m3mzaahf.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10255,7 +10205,7 @@ const linksData = [
       },
       {
         title: "Blue Tape",
-        url: ["https://archive.org/details/1748677080_zeffon_-_blue_tape", "https://pomf2.lain.la/f/f3ocoxky.7z", "https://fileditchfiles.me/file.php?f=/s23/fTrBvrOYUKDRPtTpeo.7z", "https://files.vc/d/dl?hash=8def09465326a8fc15e1adf6f750a498"],
+        url: ["https://archive.org/details/1748677080_zeffon_-_blue_tape", "https://fileditchfiles.me/file.php?f=/s23/fTrBvrOYUKDRPtTpeo.7z", "https://files.vc/d/dl?hash=8def09465326a8fc15e1adf6f750a498", "https://pomf2.lain.la/f/f3ocoxky.7z"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10303,7 +10253,7 @@ const linksData = [
       },
       {
         title: "BR-秘密區域-3Ë ONE EIGHT NINE IQ U__trm Du (Ёумтжд - Тгуоч Зрпамричац IV)",
-        url: ["https://archive.org/details/1748666000_zeffon_-_br-____-3__one_eight_nine_iq_u__trm_du___",],
+        url: ["https://archive.org/details/1748666000_zeffon_-_br-____-3__one_eight_nine_iq_u__trm_du___"],
         description: "",
         tags: ["FLAC"]
       },
@@ -10375,6 +10325,215 @@ const linksData = [
       {
         title: "Transparent",
         url: ["https://fileditchfiles.me/file.php?f=/s22/GWrhUUQEhnAWsxSrFMaF.7z", "https://files.vc/d/dl?hash=2523838cc6d3155c69c0e6748dfb611e", "https://pomf2.lain.la/f/vemgq6y8.7z"],
+        description: "",
+        tags: ["FLAC"]
+      }
+    ]
+  },
+  {
+    category: "エムお塁",
+    links: [
+      {
+        title: "〜近所迷惑　ザ　改〜　　　M・L・ヤバス",
+        url: ["https://archive.org/details/1748550265______-_____________m_l_____"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "\"?   ? I ?",
+        url: ["https://archive.org/details/1748544503______-_-_-_i_-"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "～ 11;11 Sratt　　ノンアップラサイコウオン　(23' 5-18-13 ,57)を次いで ～",
+        url: ["https://archive.org/details/1748573210_____-___11_11_sratt________________23__5-18-13_-57"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "🟣　Shower Da",
+        url: ["https://archive.org/details/1748549747______-___shower_da"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "aGue R",
+        url: ["https://archive.org/details/1748547424__m_-_ague_r"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "All Trophynzp",
+        url: ["https://archive.org/details/1748544552______-_all_trophynzp"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Ever Gavo Me の BrLl",
+        url: ["https://archive.org/details/1748571098________-_ever_gavo_me___brll"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Grossam",
+        url: ["https://archive.org/details/1748546386______-_grossam"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "M.Lんド のライブアルバムやでー",
+        url: ["https://archive.org/details/1748553326_____-_m_l______________"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Mammoiey. S    23  12  22  1235",
+        url: ["https://archive.org/details/1748548857______-_mammoiey__s_23_12_22_1235"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "MESUDTH  RYINET",
+        url: ["https://archive.org/details/1748548966______-_mesudth_ryinet"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Pocky",
+        url: ["https://archive.org/details/1748541302_m_l___-_pocky"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Purpla   Glou",
+        url: ["https://archive.org/details/1748540137_sleep_nown_-_purpla_glou"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Santa Maria   +  naked palucu",
+        url: ["https://archive.org/details/1748544332________-_santa_maria___naked_palucu"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Shared Summer Voice     ✔️",
+        url: ["https://archive.org/details/1748555406___________flaomw________-_dengelta____-_shared_sum"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Surcal   Uveay",
+        url: ["https://archive.org/details/1748568167___________-_surcal_uveay"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "Vicesk",
+        url: ["https://archive.org/details/1748571105____-_vicesk"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "White   Zoren",
+        url: ["https://archive.org/details/1748541486_mrdz_octvillian_-_____-_white_zoren"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "World  - M elon",
+        url: ["https://archive.org/details/1748549515______-_world_-_m_elon"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "サーカス",
+        url: ["https://archive.org/details/1748565947_______-_____"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "とあるレモンとお通しの",
+        url: ["https://archive.org/details/1748549729______-____________"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "ホヤホヤブンス",
+        url: ["https://archive.org/details/1748549421______-_________"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "まじドングリCM",
+        url: ["https://archive.org/details/1748540607_20241024______0240_118_110_20241024_1721_______-__"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "ムンぷくり　夏膨",
+        url: ["https://archive.org/details/1748549484______-__________"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "俺らの",
+        url: ["https://archive.org/details/1748540151_____________with_______-____"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "傘実",
+        url: ["https://archive.org/details/1748543388__g_-___"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "吾麻磨簀",
+        url: ["https://archive.org/details/1748572535____-_____"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "寒巻",
+        url: ["https://archive.org/details/1748550585______________tt___-___"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "尋坊",
+        url: ["https://archive.org/details/1748568966___________-___"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "星降る戻屑　　　用頭途",
+        url: ["https://archive.org/details/1748550104______-__________"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "氣刄",
+        url: ["https://archive.org/details/1748550183______-___"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "稚遅 ⭐︎ 戻",
+        url: ["https://archive.org/details/1748572607_______-________"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "融眉",
+        url: ["https://archive.org/details/1748542625_t_h_m_h_bbyugzl_-___"],
+        description: "",
+        tags: ["FLAC"]
+      },
+      {
+        title: "開けんな",
+        url: ["https://archive.org/details/1748550415______-_____"],
         description: "",
         tags: ["FLAC"]
       }
