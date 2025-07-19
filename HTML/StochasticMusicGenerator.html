@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stochastic Music Generator</title>
+    <style>
+        body { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; 
+               font-family: Arial; background: #1a1a1a; color: white; padding: 20px; }
+        canvas { grid-column: 1 / -1; border: 1px solid #333; background: #000; }
+        .controls { display: grid; gap: 10px; }
+        button { padding: 10px 20px; background: #4CAF50; border: none; color: white; cursor: pointer; }
+        label { display: grid; gap: 5px; font-size: 0.9em; }
+        h2 { color: #4CAF50; margin: 15px 0 5px; }
+        .slider-container { display: flex; align-items: center; gap: 10px; }
+        .slider-value { min-width: 40px; text-align: right; }
+        .effect-group { border-left: 3px solid #4CAF50; padding-left: 10px; margin: 10px 0; }
+    </style>
+</head>
+
+<body>
+    <h1 style="grid-column: 1 / -1">Stochastic Music Generator</h1>
+    <canvas id="visualizer" width="1200" height="400"></canvas>
+    
+    <div class="controls">
+        <h2>Playback Controls</h2>
+        <button id="playButton">Play</button>
+        <button id="stopButton">Stop</button>
+        <button id="recordButton">Start Recording</button>
+        
+        <h2>Master Controls</h2>
+        <label>
+            Volume:
+            <div class="slider-container">
+                <input type="range" id="volume" min="0" max="1" step="0.01" value="0.5">
+                <span class="slider-value" id="volumeValue">0.5</span>
+            </div>
+        </label>
+        <label>
+            Playback Rate:
+            <div class="slider-container">
+                <input type="range" id="playbackRate" min="-10" max="10" step="0.1" value="0">
+                <span class="slider-value" id="playbackRateValue">0</span>
+            </div>
+        </label>
+        
+        <h2>Waveform Probabilities</h2>
+        <label>
+            Sine:
+            <div class="slider-container">
+                <input type="range" id="sineWeight" min="0" max="100" value="30">
+                <span class="slider-value" id="sineWeightValue">30</span>
+            </div>
+        </label>
+        <label>
+            Square:
+            <div class="slider-container">
+                <input type="range" id="squareWeight" min="0" max="100" value="20">
+                <span class="slider-value" id="squareWeightValue">20</span>
+            </div>
+        </label>
+        <label>
+            Sawtooth:
+            <div class="slider-container">
+                <input type="range" id="sawtoothWeight" min="0" max="100" value="25">
+                <span class="slider-value" id="sawtoothWeightValue">25</span>
+            </div>
+        </label>
+        <label>
+            Triangle:
+            <div class="slider-container">
+                <input type="range" id="triangleWeight" min="0" max="100" value="25">
+                <span class="slider-value" id="triangleWeightValue">25</span>
+            </div>
+        </label>
+    </div>
+
+    <div class="controls">
+        <h2>Effects Controls</h2>
+        
+        <div class="effect-group">
+            <h3>Delay</h3>
+            <label>
+                Time:
+                <div class="slider-container">
+                    <input type="range" id="delayTime" min="0" max="1" step="0.1" value="0.3">
+                    <span class="slider-value" id="delayTimeValue">0.3</span>
+                </div>
+            </label>
+            <label>
+                Feedback:
+                <div class="slider-container">
+                    <input type="range" id="feedback" min="0" max="1" step="0.1" value="0.5">
+                    <span class="slider-value" id="feedbackValue">0.5</span>
+                </div>
+            </label>
+            <label>
+                Probability:
+                <div class="slider-container">
+                    <input type="range" id="delayProb" min="0" max="100" value="100">
+                    <span class="slider-value" id="delayProbValue">100</span>
+                </div>
+            </label>
+        </div>
+
+        <div class="effect-group">
+            <h3>Note Length Variation</h3>
+            <label>
+                Variation Amount (s):
+                <div class="slider-container">
+                    <input type="range" id="lengthVariation" min="0" max="60" step="0.1" value="1">
+                    <span class="slider-value" id="lengthVariationValue">1</span>
+                </div>
+            </label>
+            <label>
+                Variation Probability:
+                <div class="slider-container">
+                    <input type="range" id="lengthVariationProb" min="0" max="100" value="50">
+                    <span class="slider-value" id="lengthVariationProbValue">50</span>
+                </div>
+            </label>
+        </div>
+
+        <div class="effect-group">
+            <h3>Bit Crusher</h3>
+            <label>
+                Bits:
+                <div class="slider-container">
+                    <input type="range" id="bitCrush" min="1" max="16" value="8">
+                    <span class="slider-value" id="bitCrushValue">8</span>
+                </div>
+            </label>
+            <label>
+                Probability:
+                <div class="slider-container">
+                    <input type="range" id="bitCrushProb" min="0" max="100" value="100">
+                    <span class="slider-value" id="bitCrushProbValue">100</span>
+                </div>
+            </label>
+        </div>
+
+        <div class="effect-group">
+            <h3>Distortion</h3>
+            <label>
+                Amount:
+                <div class="slider-container">
+                    <input type="range" id="distortion" min="0" max="100" value="30">
+                    <span class="slider-value" id="distortionValue">30</span>
+                </div>
+            </label>
+            <label>
+                Probability:
+                <div class="slider-container">
+                    <input type="range" id="distortionProb" min="0" max="100" value="100">
+                    <span class="slider-value" id="distortionProbValue">100</span>
+                </div>
+            </label>
+        </div>
+
+        <div class="effect-group">
+            <h3>Filter</h3>
+            <label>
+                Frequency:
+                <div class="slider-container">
+                    <input type="range" id="filterFreq" min="20" max="20000" step="100" value="5000">
+                    <span class="slider-value" id="filterFreqValue">5000</span>
+                </div>
+            </label>
+            <label>
+                Probability:
+                <div class="slider-container">
+                    <input type="range" id="filterProb" min="0" max="100" value="100">
+                    <span class="slider-value" id="filterProbValue">100</span>
+                </div>
+            </label>
+        </div>
+    </div>
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let isPlaying = false;
+        let isRecording = false;
+        let timeoutId;
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Microtonal parameters
+        const OCTAVE_RATIO = 2;
+        const STEPS = 53;
+        const BASE_FREQ = 220;
+
+        // Global audio nodes
+        const mainOutput = audioContext.createGain();
+        mainOutput.gain.value = 0.5;
+        mainOutput.connect(audioContext.destination);
+
+        // Effect probabilities
+        const effectProbabilities = {
+            delay: 100,
+            bitCrush: 100,
+            distortion: 100,
+            filter: 100,
+            lengthVariation: 50
+        };
+
+        // Playback rate control
+        let playbackRate = 1;
+
+        // Recording functions
+        function startRecording() {
+            audioChunks = [];
+            const streamDestination = audioContext.createMediaStreamDestination();
+            mainOutput.connect(streamDestination);
+            
+            mediaRecorder = new MediaRecorder(streamDestination.stream);
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = exportWAV;
+            mediaRecorder.start();
+        }
+
+        function stopRecording() {
+            mediaRecorder.stop();
+            mainOutput.disconnect();
+            mainOutput.connect(audioContext.destination);
+        }
+
+        function exportWAV() {
+            const blob = new Blob(audioChunks, { type: 'audio/wav' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `recording_${new Date().toISOString().replace(/[:.]/g, '-').split('.')[0]}.wav`;
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => {
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }, 100);
+        }
+
+        function createSound() {
+            const osc = audioContext.createOscillator();
+            const gain = audioContext.createGain();
+            const pan = audioContext.createStereoPanner();
+
+            // Base note parameters
+            const baseDuration = 0.5;
+            let duration = baseDuration;
+            
+            // Apply length variation with probability
+            if (Math.random() * 100 < effectProbabilities.lengthVariation) {
+                const variation = parseFloat(document.getElementById('lengthVariation').value);
+                duration = Math.max(0.1, baseDuration + (Math.random() * variation));
+            }
+
+            // Random parameters
+            const freq = BASE_FREQ * Math.pow(OCTAVE_RATIO, Math.random() * 2);
+            const panValue = Math.random() * 2 - 1;
+
+            // Base connections
+            let lastNode = pan;
+            const effectsChain = [];
+
+            // Apply effects with probabilities
+            if (Math.random() * 100 < effectProbabilities.bitCrush) {
+                const bitCrusher = audioContext.createScriptProcessor(4096, 1, 1);
+                const bits = document.getElementById('bitCrush').value;
+                bitCrusher.onaudioprocess = e => {
+                    const step = Math.pow(2, bits);
+                    const input = e.inputBuffer.getChannelData(0);
+                    const output = e.outputBuffer.getChannelData(0);
+                    for (let i = 0; i < input.length; i++) {
+                        output[i] = Math.floor(input[i] * step) / step;
+                    }
+                };
+                effectsChain.push(bitCrusher);
+            }
+
+            if (Math.random() * 100 < effectProbabilities.distortion) {
+                const distortion = audioContext.createWaveShaper();
+                distortion.curve = makeDistortionCurve(document.getElementById('distortion').value);
+                effectsChain.push(distortion);
+            }
+
+            if (Math.random() * 100 < effectProbabilities.filter) {
+                const filter = audioContext.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = document.getElementById('filterFreq').value;
+                effectsChain.push(filter);
+            }
+
+            if (Math.random() * 100 < effectProbabilities.delay) {
+                const delay = audioContext.createDelay();
+                const feedback = audioContext.createGain();
+                delay.delayTime.value = document.getElementById('delayTime').value;
+                feedback.gain.value = document.getElementById('feedback').value;
+                delay.connect(feedback);
+                feedback.connect(delay);
+                effectsChain.push(delay);
+            }
+
+            // Connect effects chain
+            effectsChain.reduce((prev, current) => {
+                prev.connect(current);
+                return current;
+            }, lastNode);
+
+            // Final connection to output
+            const finalNode = effectsChain[effectsChain.length - 1] || lastNode;
+            finalNode.connect(mainOutput);
+
+            // Oscillator setup
+            osc.type = getWeightedWaveform();
+            osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+            pan.pan.setValueAtTime(panValue, audioContext.currentTime);
+            gain.gain.setValueAtTime(Math.random() * 0.4 + 0.1, audioContext.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+            osc.connect(gain).connect(pan);
+            osc.start();
+            osc.stop(audioContext.currentTime + duration);
+            drawVisualization(freq, panValue);
+        }
+
+        function makeDistortionCurve(amount) {
+            const k = amount * 0.01;
+            const curve = new Float32Array(44100);
+            for (let i = 0; i < curve.length; i++) {
+                const x = (i * 2) / curve.length - 1;
+                curve[i] = (Math.PI + k) * x / (Math.PI + (k * Math.abs(x)));
+            }
+            return curve;
+        }
+
+        function getWeightedWaveform() {
+            const weights = {
+                sine: parseInt(document.getElementById('sineWeight').value),
+                square: parseInt(document.getElementById('squareWeight').value),
+                sawtooth: parseInt(document.getElementById('sawtoothWeight').value),
+                triangle: parseInt(document.getElementById('triangleWeight').value)
+            };
+            const total = Object.values(weights).reduce((a, b) => a + b);
+            const random = Math.random() * total;
+            let sum = 0;
+            for (const [type, weight] of Object.entries(weights)) {
+                sum += weight;
+                if (random <= sum) return type;
+            }
+            return 'sine';
+        }
+
+        function drawVisualization(freq, pan) {
+            const canvas = document.getElementById('visualizer');
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            const hue = (freq / 880) * 360;
+            const x = canvas.width/2 + pan * canvas.width/2;
+            const y = canvas.height/2 + Math.sin(Date.now()/200) * 50;
+            const size = (freq / 880) * 150 + 20;
+            
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fillStyle = `hsla(${hue}, 80%, 60%, 0.3)`;
+            ctx.filter = `blur(${size/20}px)`;
+            ctx.fill();
+        }
+
+        function generateSequence() {
+            createSound();
+            const baseInterval = Math.pow(2, Math.random() * 4 - 2) * 100;
+            const rate = playbackRate === 0 ? 1 : playbackRate;
+            const interval = baseInterval / Math.abs(rate);
+            if (isPlaying) timeoutId = setTimeout(generateSequence, interval);
+        }
+
+        // Event listeners
+        document.querySelectorAll('input[type="range"]').forEach(slider => {
+            const valueDisplay = document.getElementById(`${slider.id}Value`);
+            valueDisplay.textContent = slider.value;
+            slider.addEventListener('input', e => {
+                valueDisplay.textContent = e.target.value;
+            });
+        });
+
+        document.getElementById('volume').addEventListener('input', e => {
+            mainOutput.gain.value = e.target.value;
+        });
+
+        document.getElementById('playbackRate').addEventListener('input', e => {
+            playbackRate = Math.pow(2, e.target.value);
+            document.getElementById('playbackRateValue').textContent = e.target.value;
+        });
+
+        document.getElementById('lengthVariationProb').addEventListener('input', e => {
+            effectProbabilities.lengthVariation = e.target.value;
+        });
+
+        document.querySelectorAll('[id$="Prob"]').forEach(slider => {
+            if (!slider.id.includes('lengthVariation')) {
+                const effect = slider.id.replace('Prob', '');
+                slider.addEventListener('input', e => {
+                    effectProbabilities[effect] = e.target.value;
+                });
+            }
+        });
+
+        document.getElementById('playButton').addEventListener('click', () => {
+            if (!isPlaying) {
+                isPlaying = true;
+                generateSequence();
+            }
+        });
+
+        document.getElementById('stopButton').addEventListener('click', () => {
+            isPlaying = false;
+            clearTimeout(timeoutId);
+        });
+
+        document.getElementById('recordButton').addEventListener('click', () => {
+            if (!isRecording) {
+                isRecording = true;
+                startRecording();
+                document.getElementById('recordButton').textContent = 'Stop Recording';
+            } else {
+                isRecording = false;
+                stopRecording();
+                document.getElementById('recordButton').textContent = 'Start Recording';
+            }
+        });
+    </script>
+
+<!-- Home Button -->
+<a href="../index.html" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+<style>
+.home-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-decoration: none;
+    color: #0051ff;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: #2563eb;
+    color: white;
+}
+
+.home-button:active {
+    transform: scale(0.95);
+}
+</style>
+
+</body>
+</html>

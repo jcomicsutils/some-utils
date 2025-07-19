@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noise Generator</title>
+    <style>
+        body {
+            background-color: #000;
+            color: #ff0000;
+            font-family: 'Arial Black', sans-serif;
+            padding: 10px;
+            margin: 0;
+        }
+        .control-panel {
+            border: 3px solid #ff0000;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: #333;
+            height: 5px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 15px;
+            height: 15px;
+            background: #ff0000;
+        }
+        button {
+            background: #ff0000;
+            color: #000;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+            margin: 5px 0;
+        }
+        button:hover {
+            background: #ff4444;
+        }
+        .warning {
+            color: #ff0000;
+            font-size: 24px;
+            text-align: center;
+            margin: 20px;
+        }
+        .section-title {
+            color: #ff0000;
+            font-size: 18px;
+            margin: 15px 0;
+        }
+        .param-group {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #ff0000;
+        }
+        canvas {
+            display: block;
+            margin: 20px auto;
+            background: #000;
+            border: 2px solid #ff0000;
+            max-width: 100%;
+            height: auto;
+        }
+        /* Mobile responsiveness */
+        @media (max-width: 600px) {
+            .control-panel {
+                padding: 10px;
+            }
+            canvas {
+                height: 100px; /* Smaller height for mobile */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="warning">Noise Generator</div>
+    
+    <div class="control-panel">
+        <div class="param-group">
+            <div class="section-title">MASTER DESTRUCTION</div>
+            <button id="toggleNoise">ENGAGE AUDIO TERROR</button>
+            <label>Master Volume: <input type="range" id="masterVolume" min="0" max="1" step="0.01" value="0.5"></label>
+        </div>
+
+        <div class="param-group">
+            <div class="section-title">OSCILLATOR TORTURE</div>
+            <label>Oscillator Count: <input type="range" id="oscCount" min="1" max="20" step="1" value="5"></label>
+            <label>Base Frequency: <input type="range" id="baseFreq" min="20" max="20000" step="1" value="50"></label>
+            <label>Frequency Chaos: <input type="range" id="freqChaos" min="0" max="1000" step="1" value="500"></label>
+            <label>FM Modulation Depth: <input type="range" id="fmDepth" min="0" max="1000" step="1" value="300"></label>
+            <label>FM Modulation Speed: <input type="range" id="fmSpeed" min="0" max="100" step="0.1" value="23.7"></label>
+        </div>
+
+        <div class="param-group">
+            <div class="section-title">DISTORTION MATRIX</div>
+            <label>Wave Shattering: <input type="range" id="distortion" min="0" max="100" step="1" value="50"></label>
+            <label>Bit Crushing: <input type="range" id="bitCrush" min="1" max="16" step="1" value="4"></label>
+            <label>Sample Rate Destruction: <input type="range" id="sampleRate" min="4000" max="44100" step="100" value="8000"></label>
+        </div>
+
+        <div class="param-group">
+            <div class="section-title">FILTERED AGONY</div>
+            <label>Low-pass Resonance: <input type="range" id="lpResonance" min="0" max="40" step="1" value="30"></label>
+            <label>High-pass Frequency: <input type="range" id="hpFreq" min="20" max="20000" step="1" value="5000"></label>
+            <label>Band-reject Frequency: <input type="range" id="brFreq" min="20" max="20000" step="1" value="2000"></label>
+        </div>
+
+        <div class="param-group">
+            <div class="section-title">SPATIAL TORMENT</div>
+            <label>Stereo Panning Chaos: <input type="range" id="panChaos" min="0" max="1" step="0.01" value="0.7"></label>
+            <label>Reverb Decay: <input type="range" id="reverbDecay" min="0" max="10" step="0.1" value="4.5"></label>
+            <label>Delay Feedback: <input type="range" id="delayFeedback" min="0" max="0.99" step="0.01" value="0.8"></label>
+        </div>
+
+        <!-- Randomize button -->
+        <button id="randomizeBtn">RANDOMIZE PARAMETERS</button>
+        <!-- Recording button -->
+        <button id="recordBtn">START RECORDING</button>
+    </div>
+
+    <canvas id="visualizer"></canvas>
+
+    <script>
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        let isNoiseActive = false;
+        let oscillators = [];
+        let noiseNodes = [];
+        let distortionNode = audioContext.createWaveShaper();
+        let bitCrusherNode = audioContext.createScriptProcessor(4096, 1, 1);
+        let filters = {
+            lp: audioContext.createBiquadFilter(),
+            hp: audioContext.createBiquadFilter(),
+            br: audioContext.createBiquadFilter()
+        };
+        let reverbNode = audioContext.createConvolver();
+        let delayNode = audioContext.createDelay();
+        let analyser = audioContext.createAnalyser();
+        analyser.fftSize = 2048;
+        let recorderGain;
+        let isRecording = false;
+        let recordingProcessor = null;
+        let audioData = [];
+
+        const canvas = document.getElementById('visualizer');
+        const canvasCtx = canvas.getContext('2d');
+
+        function setCanvasSize() {
+            canvas.width = window.innerWidth * 0.9;
+            canvas.height = window.innerWidth > 600 ? 200 : 100;
+        }
+        setCanvasSize();
+        window.addEventListener('resize', setCanvasSize);
+
+        function createNoise() {
+            const bufferSize = 4096;
+            const noiseGenerator = audioContext.createScriptProcessor(bufferSize, 1, 1);
+            noiseGenerator.onaudioprocess = e => {
+                const output = e.outputBuffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    output[i] = Math.random() * 2 - 1;
+                }
+            };
+            return noiseGenerator;
+        }
+
+        function createDistortionCurve(amount) {
+            const k = typeof amount === 'number' ? amount : 50;
+            const n_samples = 44100;
+            const curve = new Float32Array(n_samples);
+            for (let i = 0; i < n_samples; i++) {
+                const x = (i * 2) / n_samples - 1;
+                curve[i] = (Math.PI + k) * x / (Math.PI + (k * Math.abs(x)));
+            }
+            return curve;
+        }
+
+        function setupEffects() {
+            distortionNode.curve = createDistortionCurve(50);
+            distortionNode.oversample = '4x';
+
+            bitCrusherNode.onaudioprocess = e => {
+                const input = e.inputBuffer.getChannelData(0);
+                const output = e.outputBuffer.getChannelData(0);
+                const bits = parseInt(document.getElementById('bitCrush').value);
+                const norm = Math.pow(2, bits);
+                for (let i = 0; i < input.length; i++) {
+                    output[i] = Math.round(input[i] * norm) / norm;
+                }
+            };
+
+            filters.lp.type = 'lowpass';
+            filters.hp.type = 'highpass';
+            filters.br.type = 'notch';
+
+            delayNode.delayTime.value = 0.1;
+            const delayFeedback = audioContext.createGain();
+            delayFeedback.gain.value = 0.8;
+            delayNode.connect(delayFeedback);
+            delayFeedback.connect(delayNode);
+
+            const reverbImpulse = audioContext.createBuffer(2, audioContext.sampleRate * 2, audioContext.sampleRate);
+            for (let channel = 0; channel < 2; channel++) {
+                const buffer = reverbImpulse.getChannelData(channel);
+                for (let i = 0; i < buffer.length; i++) {
+                    buffer[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / buffer.length, 10);
+                }
+            }
+            reverbNode.buffer = reverbImpulse;
+        }
+
+        function updateParameters() {
+            oscillators.forEach(osc => {
+                osc.frequency.value = parseFloat(document.getElementById('baseFreq').value) + Math.random() * parseFloat(document.getElementById('freqChaos').value);
+            });
+
+            const fmOsc = audioContext.createOscillator();
+            const fmGain = audioContext.createGain();
+            fmOsc.connect(fmGain);
+            fmGain.connect(oscillators[0].frequency);
+            fmOsc.frequency.value = parseFloat(document.getElementById('fmSpeed').value);
+            fmGain.gain.value = parseFloat(document.getElementById('fmDepth').value);
+
+            distortionNode.curve = createDistortionCurve(parseInt(document.getElementById('distortion').value));
+
+            filters.lp.frequency.value = 2000;
+            filters.lp.Q.value = parseFloat(document.getElementById('lpResonance').value);
+            filters.hp.frequency.value = parseFloat(document.getElementById('hpFreq').value);
+            filters.br.frequency.value = parseFloat(document.getElementById('brFreq').value);
+
+            delayNode.delayTime.value = Math.random() * 0.2;
+        }
+
+        function toggleNoise() {
+            if (!isNoiseActive) {
+                for (let i = 0; i < document.getElementById('oscCount').value; i++) {
+                    const osc = audioContext.createOscillator();
+                    osc.type = ['sawtooth', 'square', 'triangle'][Math.floor(Math.random() * 3)];
+                    osc.frequency.value = document.getElementById('baseFreq').value + Math.random() * document.getElementById('freqChaos').value;
+                    osc.start();
+                    oscillators.push(osc);
+                }
+
+                const noise = createNoise();
+                noiseNodes.push(noise);
+
+                const merger = audioContext.createChannelMerger(2);
+                
+                oscillators.forEach(osc => osc.connect(distortionNode));
+                noise.connect(distortionNode);
+                
+                distortionNode.connect(bitCrusherNode);
+                bitCrusherNode.connect(filters.lp);
+                filters.lp.connect(filters.hp);
+                filters.hp.connect(filters.br);
+                filters.br.connect(delayNode);
+                delayNode.connect(reverbNode);
+                reverbNode.connect(analyser);
+                analyser.connect(merger, 0, 0);
+                analyser.connect(merger, 0, 1);
+                
+                recorderGain = audioContext.createGain();
+                merger.connect(recorderGain);
+                recorderGain.connect(audioContext.destination);
+
+                updateParameters();
+                setInterval(updateParameters, 100);
+
+                isNoiseActive = true;
+                document.getElementById('toggleNoise').textContent = 'TERMINATE AUDIO TERROR';
+                visualize();
+            } else {
+                oscillators.forEach(osc => osc.stop());
+                noiseNodes.forEach(node => node.disconnect());
+                oscillators = [];
+                noiseNodes = [];
+                isNoiseActive = false;
+                document.getElementById('toggleNoise').textContent = 'ENGAGE AUDIO TERROR';
+            }
+        }
+
+        function visualize() {
+            const bufferLength = analyser.frequencyBinCount;
+            const dataArray = new Uint8Array(bufferLength);
+
+            function draw() {
+                requestAnimationFrame(draw);
+                analyser.getByteTimeDomainData(dataArray);
+                canvasCtx.fillStyle = 'rgb(0, 0, 0)';
+                canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+                canvasCtx.lineWidth = 2;
+                canvasCtx.strokeStyle = 'rgb(255, 0, 0)';
+                canvasCtx.beginPath();
+
+                const sliceWidth = canvas.width * 1.0 / bufferLength;
+                let x = 0;
+                for (let i = 0; i < bufferLength; i++) {
+                    const v = dataArray[i] / 128.0;
+                    const y = v * canvas.height / 2;
+                    if (i === 0) canvasCtx.moveTo(x, y);
+                    else canvasCtx.lineTo(x, y);
+                    x += sliceWidth;
+                }
+                canvasCtx.lineTo(canvas.width, canvas.height / 2);
+                canvasCtx.stroke();
+            }
+            draw();
+        }
+
+        function randomizeParameters() {
+            const sliders = document.querySelectorAll('input[type="range"]');
+            sliders.forEach(slider => {
+                const min = parseFloat(slider.min);
+                const max = parseFloat(slider.max);
+                const step = parseFloat(slider.step);
+                const randomValue = min + Math.random() * (max - min);
+                slider.value = Math.round(randomValue / step) * step;
+                slider.dispatchEvent(new Event('input'));
+            });
+        }
+
+        function toggleRecording() {
+            if (!isRecording) {
+                audioData = [];
+                recordingProcessor = audioContext.createScriptProcessor(4096, 2, 2);
+                recordingProcessor.onaudioprocess = e => {
+                    const left = e.inputBuffer.getChannelData(0);
+                    const right = e.inputBuffer.getChannelData(1);
+                    const interleaved = new Float32Array(left.length * 2);
+                    for (let i = 0; i < left.length; i++) {
+                        interleaved[i * 2] = left[i];
+                        interleaved[i * 2 + 1] = right[i];
+                    }
+                    audioData.push(interleaved);
+                };
+                recorderGain.connect(recordingProcessor);
+                recordingProcessor.connect(audioContext.destination);
+                isRecording = true;
+                document.getElementById('recordBtn').textContent = 'STOP RECORDING';
+            } else {
+                recorderGain.disconnect(recordingProcessor);
+                recordingProcessor.disconnect();
+                recordingProcessor = null;
+                isRecording = false;
+                document.getElementById('recordBtn').textContent = 'START RECORDING';
+
+                const wavBlob = encodeWAV(audioData);
+                const url = URL.createObjectURL(wavBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `terror_${new Date().toISOString().replace(/[:.]/g, '-')}.wav`;
+                a.click();
+                URL.revokeObjectURL(url);
+            }
+        }
+
+        function encodeWAV(audioData) {
+            const numChannels = 2;
+            const sampleRate = audioContext.sampleRate;
+            const format = 1;
+            const bitDepth = 16;
+
+            let totalLength = 0;
+            for (const buffer of audioData) totalLength += buffer.length;
+            const interleaved = new Float32Array(totalLength);
+            let offset = 0;
+            for (const buffer of audioData) {
+                interleaved.set(buffer, offset);
+                offset += buffer.length;
+            }
+
+            const buffer = new ArrayBuffer(44 + interleaved.length * 2);
+            const view = new DataView(buffer);
+
+            function writeString(view, offset, string) {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            }
+
+            writeString(view, 0, 'RIFF');
+            view.setUint32(4, 36 + interleaved.length * 2, true);
+            writeString(view, 8, 'WAVE');
+            writeString(view, 12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, format, true);
+            view.setUint16(22, numChannels, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * numChannels * (bitDepth / 8), true);
+            view.setUint16(32, numChannels * (bitDepth / 8), true);
+            view.setUint16(34, bitDepth, true);
+            writeString(view, 36, 'data');
+            view.setUint32(40, interleaved.length * 2, true);
+
+            let index = 44;
+            for (let i = 0; i < interleaved.length; i++) {
+                const sample = Math.max(-1, Math.min(1, interleaved[i]));
+                view.setInt16(index, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                index += 2;
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        document.getElementById('toggleNoise').addEventListener('click', toggleNoise);
+        document.getElementById('randomizeBtn').addEventListener('click', randomizeParameters);
+        document.getElementById('recordBtn').addEventListener('click', toggleRecording);
+        document.getElementById('masterVolume').addEventListener('input', e => {
+            audioContext.destination.gain.value = e.target.value;
+        });
+
+        setupEffects();
+    </script>
+
+<!-- Home Button -->
+<a href="../index.html" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+<style>
+.home-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-decoration: none;
+    color: #0051ff;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: #2563eb;
+    color: white;
+}
+
+.home-button:active {
+    transform: scale(0.95);
+}
+</style>
+    
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Artist Links Converter</title>
+  <style>
+    :root {
+      --bg-color: #0a0a0a;
+      --surface-color: #151515;
+      --primary-color: #7c4dff;
+      --secondary-color: #00e676;
+      --text-primary: #ffffff;
+      --text-secondary: #888;
+      --error-color: #ff5252;
+    }
+    body {
+      margin: 0;
+      padding: 2rem;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 2rem;
+      font-size: 2rem;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      width: 100%;
+      max-width: 1600px;
+      height: 80vh;
+    }
+    .panel {
+      background: var(--surface-color);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+    .panel:hover {
+      transform: translateY(-2px);
+    }
+    h2 {
+      margin: 0 0 1.5rem 0;
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 1.4rem;
+    }
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 1.2rem;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.15);
+    }
+    .output-container {
+      position: relative;
+      flex: 1;
+      background: #111;
+      border-radius: 10px;
+      padding: 1.2rem;
+      overflow: auto;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--secondary-color);
+      line-height: 1.5;
+    }
+    .error {
+      color: var(--error-color) !important;
+      border-color: var(--error-color) !important;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+      background: #6d40e5;
+      transform: scale(1.05);
+    }
+    .status {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface-color);
+      padding: 8px 16px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+<body>
+  <h1>Artist Links Converter</h1>
+  <div class="container">
+    <div class="panel">
+      <h2>Input (Exact Format)</h2>
+      <textarea id="input" placeholder='Paste your input here...'
+      oninput="convertInput()"></textarea>
+    </div>
+    <div class="panel">
+      <h2>Converted Output</h2>
+      <div class="output-container">
+        <pre id="output"></pre>
+        <button class="copy-btn" onclick="copyOutput()">Copy</button>
+      </div>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+  <script>
+    // Extract the hostname from a URL.
+    function formatUrl(url) {
+      try {
+        const domain = new URL(url).hostname;
+        return `[${url}, ${domain}]`;
+      } catch (e) {
+        return `[${url}, unknown]`;
+      }
+    }
+    
+    function convertInput() {
+      const inputEl = document.getElementById('input');
+      const outputEl = document.getElementById('output');
+      let raw = inputEl.value.trim();
+      
+      if (!raw) {
+        outputEl.textContent = '';
+        return;
+      }
+      
+      try {
+        // Remove trailing comma if present at the end of the object.
+        raw = raw.replace(/},\s*$/, '}');
+        
+        // Only match keys at the beginning of a line (ignoring leading whitespace).
+        const fixed = raw.replace(/^\s*(\w+)\s*:/gm, '"$1":');
+        
+        // Parse the fixed string as JSON.
+        const data = JSON.parse(fixed);
+        
+        // Validate required fields.
+        if (!data.category || !Array.isArray(data.links) || data.links.length === 0) {
+          throw new Error('Input must include a category and a non-empty links array.');
+        }
+        
+        // The first link item is the folder.
+        const folder = data.links[0];
+        let output = `[b]${data.category} [${folder.url[0]}, ${folder.title}][/b]\n`;
+        
+        // Process subsequent links (items 1 and onward)
+        for (let i = 1; i < data.links.length; i++) {
+          const link = data.links[i];
+          const tag = (link.tags && link.tags.length > 0) ? link.tags[0] : '';
+          let line = `${link.title}`;
+          if (tag) {
+            line += `, ${tag}`;
+          }
+          line += ': ';
+          // Build formatted URL list with extracted domains.
+          const formattedUrls = link.url.map(url => formatUrl(url)).join(', ');
+          line += formattedUrls;
+          output += line + '\n';
+        }
+        
+        outputEl.textContent = output;
+        inputEl.classList.remove('error');
+        showStatus('Conversion successful', '--secondary-color');
+      } catch (err) {
+        outputEl.textContent = 'Error: ' + err.message;
+        inputEl.classList.add('error');
+        showStatus(err.message, '--error-color');
+      }
+    }
+    
+    function copyOutput() {
+      const outputEl = document.getElementById('output');
+      navigator.clipboard.writeText(outputEl.textContent)
+        .then(() => showStatus('Copied to clipboard!', '--primary-color'))
+        .catch(() => showStatus('Copy failed!', '--error-color'));
+    }
+    
+    function showStatus(message, colorVar = '--primary-color') {
+      const statusEl = document.getElementById('status');
+      statusEl.style.color = `var(${colorVar})`;
+      statusEl.textContent = message;
+      statusEl.style.opacity = '1';
+      setTimeout(() => statusEl.style.opacity = '0', 2000);
+    }
+  </script>
+  
+  <!-- Home Button -->
+  <a href="../index.html" class="home-button" aria-label="Return to Home">
+    🏠
+  </a>
+ <style>
+    .home-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: #ff0000;
+      border-radius: 50%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      text-decoration: none;
+      color: #0051ff;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+    .home-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      background: #2563eb;
+      color: white;
+    }
+    .home-button:active {
+      transform: scale(0.95);
+    }
+  </style>
+</body>
+</html>

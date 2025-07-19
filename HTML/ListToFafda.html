@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List to fafda</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --surface-color: #151515;
+            --primary-color: #7c4dff;
+            --secondary-color: #00e676;
+            --text-primary: #ffffff;
+            --text-secondary: #888;
+            --error-color: #ff5252;
+        }
+
+        body {
+            margin: 0;
+            padding: 2rem;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: 'Inter', system-ui, sans-serif;
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            display: grid;
+            gap: 2rem;
+        }
+
+        .panel {
+            background: var(--surface-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease;
+            position: relative;
+        }
+
+        .panel:hover {
+            transform: translateY(-2px);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin: 0 0 2rem 0;
+            font-size: 2rem;
+        }
+
+        .io-container {
+            position: relative;
+            margin: 1rem 0;
+        }
+
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #111;
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 1.5rem;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.15);
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            z-index: 1;
+        }
+
+        .copy-btn:hover {
+            background: #6d40e5;
+            transform: scale(1.05);
+        }
+
+        .status {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--surface-color);
+            padding: 8px 16px;
+            border-radius: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .home-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            text-decoration: none;
+            color: white;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .home-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: #6d40e5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Convert List to fafda</h1>
+        
+        <div class="panel">
+            <div class="io-container">
+                <textarea id="input"></textarea>
+            </div>
+            
+            <div class="io-container">
+                <textarea id="output" readonly></textarea>
+                <button class="copy-btn" onclick="copyContent('output')">📋 Copy</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <script>
+        // Add real-time input listener
+        document.getElementById('input').addEventListener('input', convertList);
+
+        function convertList() {
+            const inputElement = document.getElementById('input');
+            const outputElement = document.getElementById('output');
+
+            try {
+                const input = JSON.parse(inputElement.value);
+
+                if (!Array.isArray(input)) {
+                    throw new Error('Input should be a list of objects');
+                }
+
+                const output = input.map(item => `
+    - readOnly: false # I will explain later keep it same
+      authToken: '${item.authToken}'
+      username: '${item.username}'
+      releaseId: ${item.releaseId}
+      releaseTag: '${item.releaseTag}'
+      repository: '${item.repository}'
+                `.trim()).join('\n\n');
+
+                outputElement.value = output;
+                showStatus('Conversion successful!', 'secondary-color');
+            } catch (error) {
+                outputElement.value = '';
+                showStatus(`Error: ${error.message}`, 'error-color');
+            }
+        }
+
+        async function copyContent(elementId) {
+            try {
+                const text = document.getElementById(elementId).value;
+                await navigator.clipboard.writeText(text);
+                showStatus('📋 Copied to clipboard!', 'secondary-color');
+            } catch (err) {
+                showStatus('❌ Failed to copy!', 'error-color');
+            }
+        }
+
+        function showStatus(message, colorVar = 'primary-color') {
+            const status = document.getElementById('status');
+            status.style.color = `var(${colorVar})`;
+            status.textContent = message;
+            status.style.opacity = '1';
+            setTimeout(() => status.style.opacity = '0', 2000);
+        }
+    </script>
+
+  <!-- Home Button -->
+<a href="../index.html" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+<style>
+.home-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+    background: #ff0000;
+    border-radius: 50%;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    text-decoration: none;
+    color: #0051ff;
+    transition: all 0.3s ease;
+    z-index: 1000;
+}
+
+.home-button:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    background: #2563eb;
+    color: white;
+}
+
+.home-button:active {
+    transform: scale(0.95);
+}
+</style>
+</body>
+</html>

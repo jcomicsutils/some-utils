@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Data Sonification</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap" rel="stylesheet">
+  <style>
+    /* Basic Reset */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: #f0f4f8;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    header h1 {
+      font-size: 2rem;
+      color: #2c5282;
+    }
+    header p {
+      font-size: 1rem;
+      color: #4a5568;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #fff;
+      padding: 20px 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      font-size: 1.25rem;
+      margin-bottom: 10px;
+      color: #2c5282;
+    }
+    input[type="file"] {
+      margin-bottom: 10px;
+    }
+    .options,
+    .duration-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .options label,
+    .duration-options label {
+      background: #e2e8f0;
+      padding: 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .options input[type="checkbox"] {
+      margin-right: 5px;
+    }
+    .duration-options input[type="number"] {
+      width: 80px;
+      padding: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+    #runtimeDisplay {
+      font-weight: bold;
+      color: #2c5282;
+    }
+    .buttons {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    button {
+      background: #2c5282;
+      color: #fff;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      transition: background 0.3s ease;
+    }
+    button:disabled {
+      background: #a0aec0;
+      cursor: not-allowed;
+    }
+    button:hover:not(:disabled) {
+      background: #2b6cb0;
+    }
+    /* Progress bar styling */
+    #progressContainer {
+      display: none;
+      margin-top: 20px;
+      text-align: center;
+    }
+    progress {
+      width: 100%;
+      height: 20px;
+    }
+    footer {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #718096;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>Data Sonification</h1>
+    <p>Convert any file's raw bytes into sound with customizable settings.</p>
+  </header>
+  <div class="container">
+    <!-- File Selection -->
+    <div class="section">
+      <h2>File Selection</h2>
+      <input type="file" id="fileInput">
+    </div>
+
+    <!-- Oscillator Type Options -->
+    <div class="section">
+      <h2>Oscillator Types</h2>
+      <div class="options">
+        <label><input type="checkbox" name="oscillator" value="sine" checked> Sine</label>
+        <label><input type="checkbox" name="oscillator" value="square" checked> Square</label>
+        <label><input type="checkbox" name="oscillator" value="triangle" checked> Triangle</label>
+        <label><input type="checkbox" name="oscillator" value="sawtooth" checked> Sawtooth</label>
+      </div>
+    </div>
+
+    <!-- Duration Options -->
+    <div class="section">
+      <h2>Tone Duration Range</h2>
+      <p>Tested values: Minimum 0.001 sec and Maximum 5 sec.</p>
+      <div class="duration-options">
+        <label>Min: <input type="number" id="minDurationInput" value="0.05" step="0.01" min="0.01" max="5"></label>
+        <label>Max: <input type="number" id="maxDurationInput" value="0.3" step="0.01" min="0.01" max="5"></label>
+      </div>
+    </div>
+
+    <!-- Runtime Info -->
+    <div class="section">
+      <h2>Sonification Info</h2>
+      <p>Total runtime: <span id="runtimeDisplay">0.00</span> seconds</p>
+    </div>
+
+    <!-- Buttons -->
+    <div class="buttons">
+      <button id="toggleButton" disabled>Start Playback</button>
+      <button id="remapButton" disabled>Remap Frequencies/Durations/Types</button>
+      <button id="saveButton" disabled>Save as WAV</button>
+    </div>
+  </div>
+  
+  <!-- Progress Bar for WAV Export -->
+  <div id="progressContainer">
+    <progress id="progressBar" value="0" max="100"></progress>
+    <p>Estimated time remaining: <span id="etaDisplay">0</span> seconds</p>
+  </div>
+
+  <script>
+    let fileBytes = null;
+    // currentMapping is an array of objects: { frequency, duration, type }
+    let currentMapping = [];
+    let isPlaying = false;
+    let playbackTimeoutId = null;
+    let currentOscillator = null;
+
+    // Frequency range in Hz.
+    const minFreq = 200;
+    const maxFreq = 2000;
+    // (Tone duration range is read from inputs below)
+
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Get the selected oscillator types from the checkboxes.
+    function getSelectedOscillatorTypes() {
+      const checkboxes = document.querySelectorAll("input[name='oscillator']:checked");
+      let types = Array.from(checkboxes).map(el => el.value);
+      if (types.length === 0) {
+        types = ["sine"];
+      }
+      return types;
+    }
+
+    // Update total runtime display by summing durations of all tones.
+    function updateRuntimeDisplay(mapping) {
+      const totalDuration = mapping.reduce((acc, tone) => acc + tone.duration, 0);
+      document.getElementById("runtimeDisplay").textContent = totalDuration.toFixed(2);
+    }
+
+    // Generate a random mapping for each byte with frequency, random duration, and oscillator type.
+    function generateRandomMapping() {
+      if (!fileBytes) return [];
+      const availableTypes = getSelectedOscillatorTypes();
+      let minToneDuration = parseFloat(document.getElementById('minDurationInput').value) || 0.05;
+      let maxToneDuration = parseFloat(document.getElementById('maxDurationInput').value) || 0.3;
+      if (maxToneDuration < minToneDuration) {
+        maxToneDuration = minToneDuration;
+      }
+      const mapping = new Array(fileBytes.length);
+      for (let i = 0; i < fileBytes.length; i++) {
+        const frequency = minFreq + Math.random() * (maxFreq - minFreq);
+        const duration = minToneDuration + Math.random() * (maxToneDuration - minToneDuration);
+        const type = availableTypes[Math.floor(Math.random() * availableTypes.length)];
+        mapping[i] = { frequency, duration, type };
+      }
+      updateRuntimeDisplay(mapping);
+      return mapping;
+    }
+
+    // Stop playback and update UI.
+    function stopPlayback() {
+      isPlaying = false;
+      if (playbackTimeoutId) {
+        clearTimeout(playbackTimeoutId);
+        playbackTimeoutId = null;
+      }
+      if (currentOscillator) {
+        try { currentOscillator.stop(); } catch (e) {}
+        currentOscillator = null;
+      }
+      document.getElementById('toggleButton').textContent = "Start Playback";
+    }
+
+    // Recursive function to play one tone at a time.
+    function playTone(index) {
+      if (!isPlaying || index >= currentMapping.length) {
+        stopPlayback();
+        return;
+      }
+      
+      const { frequency, duration, type } = currentMapping[index];
+
+      currentOscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      currentOscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+      currentOscillator.type = type;
+      currentOscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+
+      gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.5, audioContext.currentTime + 0.02);
+      gainNode.gain.setValueAtTime(0.5, audioContext.currentTime + duration - 0.02);
+      gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + duration);
+
+      currentOscillator.start(audioContext.currentTime);
+      currentOscillator.stop(audioContext.currentTime + duration);
+
+      setTimeout(() => { currentOscillator = null; }, duration * 1000);
+      playbackTimeoutId = setTimeout(() => {
+        playTone(index + 1);
+      }, duration * 1000);
+    }
+
+    // Handle file selection.
+    document.getElementById('fileInput').addEventListener('change', (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const arrayBuffer = e.target.result;
+        fileBytes = new Uint8Array(arrayBuffer);
+        currentMapping = generateRandomMapping();
+        document.getElementById('toggleButton').disabled = false;
+        document.getElementById('remapButton').disabled = false;
+        document.getElementById('saveButton').disabled = false;
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    // Toggle playback: start if not playing, stop if playing.
+    document.getElementById('toggleButton').addEventListener('click', () => {
+      if (isPlaying) {
+        stopPlayback();
+      } else {
+        if (fileBytes && currentMapping.length) {
+          isPlaying = true;
+          document.getElementById('toggleButton').textContent = "Stop Playback";
+          playTone(0);
+        }
+      }
+    });
+
+    // Remap without starting playback.
+    document.getElementById('remapButton').addEventListener('click', () => {
+      if (fileBytes) {
+        currentMapping = generateRandomMapping();
+      }
+    });
+
+    // Convert an AudioBuffer to a WAV Blob.
+    function bufferToWav(abuffer) {
+      const numOfChan = abuffer.numberOfChannels,
+            length = abuffer.length * numOfChan * 2 + 44,
+            buffer = new ArrayBuffer(length),
+            view = new DataView(buffer),
+            channels = [],
+            sampleRate = abuffer.sampleRate;
+      let pos = 0;
+      function writeString(s) {
+        for (let i = 0; i < s.length; i++){
+          view.setUint8(pos++, s.charCodeAt(i));
+        }
+      }
+      writeString('RIFF');
+      view.setUint32(pos, length - 8, true); pos += 4;
+      writeString('WAVE');
+      writeString('fmt ');
+      view.setUint32(pos, 16, true); pos += 4;
+      view.setUint16(pos, 1, true); pos += 2;
+      view.setUint16(pos, numOfChan, true); pos += 2;
+      view.setUint32(pos, sampleRate, true); pos += 4;
+      view.setUint32(pos, sampleRate * numOfChan * 2, true); pos += 4;
+      view.setUint16(pos, numOfChan * 2, true); pos += 2;
+      view.setUint16(pos, 16, true); pos += 2;
+      writeString('data');
+      view.setUint32(pos, length - pos - 4, true); pos += 4;
+      for (let i = 0; i < numOfChan; i++) {
+        channels.push(abuffer.getChannelData(i));
+      }
+      const interleaved = new Float32Array(abuffer.length * numOfChan);
+      for (let i = 0; i < abuffer.length; i++) {
+        for (let channel = 0; channel < numOfChan; channel++) {
+          interleaved[i * numOfChan + channel] = channels[channel][i];
+        }
+      }
+      for (let i = 0; i < interleaved.length; i++) {
+        let sample = Math.max(-1, Math.min(1, interleaved[i]));
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF;
+        view.setInt16(pos, sample, true);
+        pos += 2;
+      }
+      return new Blob([buffer], { type: 'audio/wav' });
+    }
+
+    // Export the current sonification as a WAV file.
+    function exportWav() {
+      if (!fileBytes || !currentMapping.length) return;
+      const sampleRate = 44100;
+      const totalDuration = currentMapping.reduce((acc, tone) => acc + tone.duration, 0);
+      const offlineContext = new OfflineAudioContext(1, sampleRate * totalDuration, sampleRate);
+      let currentTime = 0;
+      for (let i = 0; i < currentMapping.length; i++) {
+        const { frequency, duration, type } = currentMapping[i];
+        const oscillator = offlineContext.createOscillator();
+        const gainNode = offlineContext.createGain();
+        oscillator.frequency.setValueAtTime(frequency, currentTime);
+        oscillator.type = type;
+        oscillator.connect(gainNode);
+        gainNode.connect(offlineContext.destination);
+        gainNode.gain.setValueAtTime(0, currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.5, currentTime + 0.02);
+        gainNode.gain.setValueAtTime(0.5, currentTime + duration - 0.02);
+        gainNode.gain.linearRampToValueAtTime(0, currentTime + duration);
+        oscillator.start(currentTime);
+        oscillator.stop(currentTime + duration);
+        currentTime += duration;
+      }
+      // Show progress UI.
+      const progressContainer = document.getElementById("progressContainer");
+      const progressBar = document.getElementById("progressBar");
+      const etaDisplay = document.getElementById("etaDisplay");
+      progressContainer.style.display = "block";
+      progressBar.value = 0;
+      // Set an estimated rendering time (in ms). Here we assume 5000 ms (5 seconds).
+      const estimatedRenderTime = 5000;
+      const startTime = Date.now();
+      const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min(100, (elapsed / estimatedRenderTime) * 100);
+        progressBar.value = progress;
+        const eta = Math.max(0, ((estimatedRenderTime - elapsed) / 1000)).toFixed(1);
+        etaDisplay.textContent = eta;
+      }, 100);
+      offlineContext.startRendering().then((renderedBuffer) => {
+        const wavBlob = bufferToWav(renderedBuffer);
+        const url = URL.createObjectURL(wavBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'sonification.wav';
+        link.click();
+        URL.revokeObjectURL(url);
+        clearInterval(progressInterval);
+        progressBar.value = 100;
+        etaDisplay.textContent = "0.0";
+        setTimeout(() => {
+          progressContainer.style.display = "none";
+        }, 500);
+      }).catch((e) => {
+        console.error(e);
+        alert("An error occurred during WAV export.");
+        clearInterval(progressInterval);
+        progressContainer.style.display = "none";
+      });
+    }
+
+    document.getElementById('saveButton').addEventListener('click', exportWav);
+  </script>
+<!-- Home Button -->
+<a href="../index.html" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+<style>
+.home-button {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  background: #ff0000;
+  border-radius: 50%;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  text-decoration: none;
+  color: #0051ff;
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+.home-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  background: #2563eb;
+  color: white;
+}
+
+.home-button:active {
+  transform: scale(0.95);
+}
+</style>
+
+</body>
+</html>

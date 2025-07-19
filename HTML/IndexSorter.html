@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>indexsorter</title>
+  <style>
+    :root {
+      --bg-color: #0a0a0a;
+      --surface-color: #151515;
+      --primary-color: #7c4dff;
+      --secondary-color: #00e676;
+      --text-primary: #ffffff;
+      --text-secondary: #888;
+      --error-color: #ff5252;
+    }
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      margin: 0 0 2rem 0;
+      font-size: 2rem;
+    }
+    body {
+      margin: 0;
+      padding: 2rem;
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      font-family: 'Inter', system-ui, sans-serif;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+    }
+    .container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      width: 100%;
+      max-width: 1600px;
+      height: 80vh;
+    }
+    .panel {
+      background: var(--surface-color);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.3s ease;
+    }
+    .panel:hover {
+      transform: translateY(-2px);
+    }
+    h2 {
+      margin: 0 0 1.5rem 0;
+      font-weight: 600;
+      color: var(--primary-color);
+      font-size: 1.4rem;
+    }
+    textarea {
+      flex: 1;
+      background: transparent;
+      border: 2px solid #333;
+      border-radius: 10px;
+      padding: 1.2rem;
+      color: var(--text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.6;
+      resize: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 4px rgba(124, 77, 255, 0.15);
+    }
+    .output-container {
+      position: relative;
+      flex: 1;
+      background: #111;
+      border-radius: 10px;
+      padding: 1.2rem;
+      overflow: auto;
+    }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--secondary-color);
+      line-height: 1.5;
+    }
+    .error {
+      color: var(--error-color) !important;
+      border-color: var(--error-color) !important;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: var(--primary-color);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    .copy-btn:hover {
+      background: #6d40e5;
+      transform: scale(1.05);
+    }
+    .status {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface-color);
+      padding: 8px 16px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Index Sorter</h1>
+  <div class="container">
+    <div class="panel">
+      <h2>Unsorted List Input</h2>
+      <textarea id="input" placeholder="Paste your unsorted list here (including 'const linksData = [...]')..." oninput="sortList()"></textarea>
+    </div>
+    <div class="panel">
+      <h2>Sorted Output</h2>
+      <div class="output-container">
+        <pre id="output"></pre>
+        <button class="copy-btn" onclick="copyOutput()">Copy</button>
+      </div>
+    </div>
+  </div>
+  <div class="status" id="status"></div>
+
+  <script>
+    // Returns the sorting key for a category.
+    function getSortKey(category) {
+      const match = category.match(/\[(.*?)\]/);
+      return category.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');;
+    }
+
+    // Custom formatter to output JavaScript object literals without quotes on the keys.
+    // For arrays consisting only of primitive values, output them inline.
+    function formatValue(value, indent = "") {
+      if (typeof value === "string") {
+        return '"' + value.replace(/"/g, '\\"') + '"';
+      } else if (typeof value === "number" || typeof value === "boolean") {
+        return String(value);
+      } else if (Array.isArray(value)) {
+        // Check if every element is a primitive value.
+        if (value.every(v => (typeof v !== "object" || v === null))) {
+          return "[" + value.map(v => formatValue(v, indent)).join(", ") + "]";
+        } else {
+          let result = "[\n";
+          const newIndent = indent + "  ";
+          for (let i = 0; i < value.length; i++) {
+            result += newIndent + formatValue(value[i], newIndent);
+            if (i < value.length - 1) result += ",";
+            result += "\n";
+          }
+          result += indent + "]";
+          return result;
+        }
+      } else if (typeof value === "object" && value !== null) {
+        let result = "{\n";
+        const newIndent = indent + "  ";
+        const keys = Object.keys(value);
+        for (let i = 0; i < keys.length; i++) {
+          const key = keys[i];
+          result += newIndent + key + ": " + formatValue(value[key], newIndent);
+          if (i < keys.length - 1) result += ",";
+          result += "\n";
+        }
+        result += indent + "}";
+        return result;
+      } else {
+        return String(value);
+      }
+    }
+
+    function sortList() {
+      const input = document.getElementById('input');
+      const output = document.getElementById('output');
+      try {
+        const text = input.value;
+        const arrayMatch = text.match(/const\s+linksData\s*=\s*(\[[\s\S]*\])\s*;?\s*$/m);
+        if (!arrayMatch) {
+          throw new Error("Could not find a complete 'linksData' array in the input. Please ensure the array is complete.");
+        }
+        const arrayString = arrayMatch[1];
+        const data = new Function("return " + arrayString)();
+        if (!Array.isArray(data)) {
+          throw new Error("Parsed data is not an array. Please check your input.");
+        }
+        
+        // Sort top-level array by category.
+        data.sort((a, b) => {
+          const keyA = getSortKey(a.category);
+          const keyB = getSortKey(b.category);
+          return keyA.localeCompare(keyB);
+        });
+
+        // Sort the links array within each category by title,
+        // ensuring items with "Folder" in the title are placed at the top.
+        data.forEach(category => {
+          if (category.links && Array.isArray(category.links)) {
+            category.links.sort((a, b) => {
+              const aTitle = (a.title || "").toLowerCase();
+              const bTitle = (b.title || "").toLowerCase();
+              const aIsFolder = aTitle.includes("folder");
+              const bIsFolder = bTitle.includes("folder");
+              if (aIsFolder && !bIsFolder) return -1;
+              if (bIsFolder && !aIsFolder) return 1;
+              return aTitle.localeCompare(bTitle);
+            });
+            category.links.forEach(link => {
+              if (link.url && Array.isArray(link.url)) {
+                link.url.sort((a, b) => a.localeCompare(b));
+              }
+            });
+          }
+        });
+
+        // Preserve the existing URL sorting inside each category's items (if applicable).
+        data.forEach(category => {
+          if (category.items && Array.isArray(category.items)) {
+            category.items.forEach(item => {
+              if (item.url && Array.isArray(item.url)) {
+                item.url.sort((a, b) => a.localeCompare(b));
+              }
+            });
+          }
+        });
+
+        const outputText = "const linksData = " + formatValue(data, "") + ";";
+        output.textContent = outputText;
+        input.classList.remove('error');
+        showStatus("Sorting successful", '--secondary-color');
+      } catch (error) {
+        output.textContent = "Error: " + error.message;
+        input.classList.add('error');
+        showStatus(error.message, '--error-color');
+      }
+    }
+
+    function copyOutput() {
+      const output = document.getElementById('output');
+      navigator.clipboard.writeText(output.textContent)
+        .then(() => showStatus("Copied to clipboard!", '--primary-color'))
+        .catch(() => showStatus("Failed to copy!", '--error-color'));
+    }
+
+    function showStatus(message, colorVar = '--primary-color') {
+      const status = document.getElementById('status');
+      status.style.color = `var(${colorVar})`;
+      status.textContent = message;
+      status.style.opacity = '1';
+      setTimeout(() => status.style.opacity = '0', 2000);
+    }
+  </script>
+
+  <!-- Home Button -->
+<a href="../index.html" class="home-button" aria-label="Return to Home">
+    🏠
+</a>
+
+  <style>
+    .home-button {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background: #ff0000;
+      border-radius: 50%;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      text-decoration: none;
+      color: #0051ff;
+      transition: all 0.3s ease;
+      z-index: 1000;
+    }
+
+    .home-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+      background: #2563eb;
+      color: white;
+    }
+
+    .home-button:active {
+      transform: scale(0.95);
+    }
+  </style>
+</body>
+</html>
