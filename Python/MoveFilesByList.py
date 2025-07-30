@@ -3,6 +3,7 @@ import shutil
 import tkinter as tk
 from tkinter import filedialog, scrolledtext
 import sys
+from collections import defaultdict
 
 # Custom class to redirect stdout to a tkinter Text widget
 class TextWidgetRedirector:
@@ -68,9 +69,9 @@ def move_items_simple(source_folder: str, item_names_list_str: str, destination_
 
     print(f"\n--- Summary ---")
     print(f"Total {item_type}s requested: {len(item_names)}")
-    print(f"Files successfully moved: {moved_count}") # Typo fix from "Files" to "Items"
+    print(f"Items successfully moved: {moved_count}")
     if failed_moves:
-        print(f"Files that could not be moved: {len(failed_moves)}")
+        print(f"Items that could not be moved: {len(failed_moves)}")
         print("  - " + "\n  - ".join(failed_moves))
     else:
         print(f"All specified {item_type}s were moved successfully.")
@@ -92,21 +93,18 @@ def selective_move_logic(source_folder: str, item_names_list_str: str, destinati
 
     # Parse the input string into (folder_name, [files]) groups
     for line in lines:
-        # Heuristic: A line without a dot is considered a folder name.
-        # A line with a dot is considered a file name.
-        if '.' not in line or '/' in line or '\\' in line: # Check for path separators too
-            # If the current folder has files, add it to parsed_groups
+        if '.' not in line or '/' in line or '\\' in line:
             if current_folder_name is not None:
                 parsed_groups.append((current_folder_name, current_files_in_list))
-            current_folder_name = line.strip('/\\') # Remove trailing slashes
+            current_folder_name = line.strip('/\\')
             current_files_in_list = []
-        else: # Likely a file name
+        else:
             if current_folder_name is None:
                 print(f"Warning: File '{line}' found before any folder definition. Skipping.")
                 continue
             current_files_in_list.append(line)
 
-    if current_folder_name is not None: # Add the last group if it exists
+    if current_folder_name is not None:
         parsed_groups.append((current_folder_name, current_files_in_list))
 
     print(f"Parsed groups for selective move: {parsed_groups}\n")
@@ -126,24 +124,14 @@ def selective_move_logic(source_folder: str, item_names_list_str: str, destinati
             print(f"Warning: Source folder '{folder_name}' not found in '{source_folder}'. Skipping its associated files.")
             continue
 
-        # Get actual files (not directories) within the source sub-folder
-        actual_files_in_source_folder = set()
-        for f in os.listdir(full_source_folder_path):
-            if os.path.isfile(os.path.join(full_source_folder_path, f)):
-                actual_files_in_source_folder.add(f)
-
-        # Convert files_in_list to a set for efficient lookup
+        actual_files_in_source_folder = {f for f in os.listdir(full_source_folder_path) if os.path.isfile(os.path.join(full_source_folder_path, f))}
         required_files_set = set(files_in_list)
 
-        # Check if all required files are present in the source sub-folder
         all_required_present = required_files_set.issubset(actual_files_in_source_folder)
-
-        # Check if there are any extra files in the source sub-folder (not in required_files_set)
         extra_files_present = bool(actual_files_in_source_folder - required_files_set)
 
         print(f"\nProcessing folder '{folder_name}':")
         if all_required_present and not extra_files_present:
-            # Scenario A: Move entire folder
             print(f"  Condition met: All required files present and no extra files. Moving entire folder.")
             try:
                 shutil.move(full_source_folder_path, full_dest_folder_path)
@@ -151,7 +139,6 @@ def selective_move_logic(source_folder: str, item_names_list_str: str, destinati
             except Exception as e:
                 print(f"  Error moving entire folder '{folder_name}': {e}")
         else:
-            # Scenario B: Move only specified files
             print(f"  Condition not met: Moving specific files only.")
             if not all_required_present:
                 missing_required = required_files_set - actual_files_in_source_folder
@@ -160,7 +147,7 @@ def selective_move_logic(source_folder: str, item_names_list_str: str, destinati
                 extra_files = actual_files_in_source_folder - required_files_set
                 print(f"  Note: Extra files found in '{folder_name}' that will remain: {', '.join(extra_files)}")
 
-            os.makedirs(full_dest_folder_path, exist_ok=True) # Ensure destination sub-folder exists for specific files
+            os.makedirs(full_dest_folder_path, exist_ok=True)
             for file_name in files_in_list:
                 source_file_path = os.path.join(full_source_folder_path, file_name)
                 dest_file_path = os.path.join(full_dest_folder_path, file_name)
@@ -175,21 +162,120 @@ def selective_move_logic(source_folder: str, item_names_list_str: str, destinati
 
     print("\nOperation Complete: Selective move operation finished.")
 
+def archive_style_move_logic(source_folder: str, item_names_list_str: str, destination_folder: str):
+    """
+    Performs a move operation based on a list format like 'folder/file.ext'.
+    It groups files by folder. If all files in a local source sub-folder are present in the
+    provided list, the entire folder is moved. Otherwise, only the specified files are moved.
+    """
+    lines = [line.strip() for line in item_names_list_str.split('\n') if line.strip()]
+    # Use defaultdict to easily group files by their parent directory
+    parsed_groups = defaultdict(list)
+    
+    print("--- Parsing Archive-Style List ---")
+    for line in lines:
+        # Normalize path separators for consistency before splitting
+        path = line.replace('\\', '/')
+        dir_name, file_name = os.path.split(path)
+
+        if not file_name: # Skip if line is just a directory name
+            print(f"Skipping directory-only entry: '{line}'")
+            continue
+
+        if dir_name:
+            parsed_groups[dir_name].append(file_name)
+        else:
+            # Use a special key for files in the root of the source folder
+            parsed_groups['__ROOT__'].append(file_name)
+    
+    print(f"Parsed {len(parsed_groups)} groups for moving.\n")
+
+    if not os.path.isdir(source_folder):
+        print(f"Error: Source folder '{source_folder}' does not exist.")
+        return
+
+    os.makedirs(destination_folder, exist_ok=True)
+    print(f"Destination root folder '{destination_folder}' ensured to exist.\n")
+
+    # --- Process root files first ---
+    if '__ROOT__' in parsed_groups:
+        root_files_to_move = parsed_groups.pop('__ROOT__')
+        print("--- Processing Root Files ---")
+        for file_name in root_files_to_move:
+            source_file_path = os.path.join(source_folder, file_name)
+            dest_file_path = os.path.join(destination_folder, file_name)
+            if os.path.isfile(source_file_path):
+                try:
+                    shutil.move(source_file_path, dest_file_path)
+                    print(f"Moved root file '{file_name}' to '{destination_folder}'.")
+                except Exception as e:
+                    print(f"Error moving root file '{file_name}': {e}")
+            else:
+                print(f"Warning: Root file '{file_name}' not found in '{source_folder}'. Skipping.")
+        print("--- Finished Processing Root Files ---\n")
+
+    # --- Process sub-folders ---
+    print("--- Processing Sub-folders ---")
+    for folder_name, files_in_list in parsed_groups.items():
+        full_source_folder_path = os.path.join(source_folder, folder_name)
+        full_dest_folder_path = os.path.join(destination_folder, folder_name)
+
+        print(f"\nProcessing folder '{folder_name}':")
+        if not os.path.isdir(full_source_folder_path):
+            print(f"  Warning: Source folder '{folder_name}' not found in '{source_folder}'. Skipping this group.")
+            continue
+
+        # Get actual files (not directories) within the source sub-folder
+        actual_files_in_source_folder = {f for f in os.listdir(full_source_folder_path) if os.path.isfile(os.path.join(full_source_folder_path, f))}
+        required_files_set = set(files_in_list)
+        
+        # ⭐ KEY CHANGE HERE: Check if all files in the local folder are present in the archive list.
+        # The archive list can have extra files that don't exist locally.
+        if actual_files_in_source_folder.issubset(required_files_set):
+            # Scenario A: All local files are in the list. Move the entire folder.
+            print(f"  Condition met: All local files are in the archive list. Moving entire folder.")
+            try:
+                # Use destination_folder as the target, shutil.move places the folder inside.
+                shutil.move(full_source_folder_path, destination_folder) 
+                print(f"  Successfully moved folder '{folder_name}' to '{destination_folder}'.")
+            except Exception as e:
+                print(f"  Error moving entire folder '{folder_name}': {e}")
+        else:
+            # Scenario B: Local folder has files not in the list. Move only the specified files.
+            print(f"  Condition not met: Moving specific files only.")
+            missing_from_list = actual_files_in_source_folder - required_files_set
+            print(f"  Note: Local files not found in archive list (will be left behind): {', '.join(missing_from_list)}")
+
+            os.makedirs(full_dest_folder_path, exist_ok=True)
+            for file_name in files_in_list:
+                source_file_path = os.path.join(full_source_folder_path, file_name)
+                dest_file_path = os.path.join(full_dest_folder_path, file_name)
+                if os.path.isfile(source_file_path):
+                    try:
+                        shutil.move(source_file_path, dest_file_path)
+                        print(f"  Moved file '{file_name}' to '{full_dest_folder_path}'.")
+                    except Exception as e:
+                        print(f"  Error moving file '{file_name}': {e}")
+                else:
+                    # This case is expected if the archive list has files not present locally.
+                    pass
+
+    print("\nOperation Complete: Archive-style move operation finished.")
 
 class FileMoverApp:
     def __init__(self, master):
         self.master = master
         master.title("File/Folder Mover GUI")
-        master.geometry("700x600") # Slightly increased height for new checkbox
+        master.geometry("800x650") 
         master.resizable(True, True)
 
         # Boolean variables for mutual exclusive checkboxes
-        self.is_file_mode = tk.BooleanVar(value=True) # Default to file mode
+        self.is_file_mode = tk.BooleanVar(value=True)
         self.is_folder_mode = tk.BooleanVar(value=False)
         self.is_selective_mode = tk.BooleanVar(value=False)
+        self.is_archive_style_mode = tk.BooleanVar(value=False) # New mode variable
 
         self.create_widgets()
-        # Ensure correct label is set initially based on default mode
         self.update_filenames_label()
 
     def create_widgets(self):
@@ -206,29 +292,18 @@ class FileMoverApp:
         mode_selection_frame = tk.LabelFrame(self.master, text="Operation Mode", padx=10, pady=5)
         mode_selection_frame.pack(padx=10, pady=5, fill="x")
 
-        self.file_checkbox = tk.Checkbutton(
-            mode_selection_frame,
-            text="Move Files (direct)",
-            variable=self.is_file_mode,
-            command=lambda: self.set_mode(self.is_file_mode)
-        )
+        self.file_checkbox = tk.Checkbutton(mode_selection_frame, text="Move Files (direct)", variable=self.is_file_mode, command=lambda: self.set_mode(self.is_file_mode))
         self.file_checkbox.pack(side="left", padx=5)
 
-        self.folder_checkbox = tk.Checkbutton(
-            mode_selection_frame,
-            text="Move Folders (direct)",
-            variable=self.is_folder_mode,
-            command=lambda: self.set_mode(self.is_folder_mode)
-        )
+        self.folder_checkbox = tk.Checkbutton(mode_selection_frame, text="Move Folders (direct)", variable=self.is_folder_mode, command=lambda: self.set_mode(self.is_folder_mode))
         self.folder_checkbox.pack(side="left", padx=5)
 
-        self.selective_checkbox = tk.Checkbutton(
-            mode_selection_frame,
-            text="Selective Folder/File Move",
-            variable=self.is_selective_mode,
-            command=lambda: self.set_mode(self.is_selective_mode)
-        )
+        self.selective_checkbox = tk.Checkbutton(mode_selection_frame, text="Selective Folder/File Move", variable=self.is_selective_mode, command=lambda: self.set_mode(self.is_selective_mode))
         self.selective_checkbox.pack(side="left", padx=5)
+        
+        # New checkbox for the archive-style move
+        self.archive_style_checkbox = tk.Checkbutton(mode_selection_frame, text="Archive Style Move", variable=self.is_archive_style_mode, command=lambda: self.set_mode(self.is_archive_style_mode))
+        self.archive_style_checkbox.pack(side="left", padx=5)
 
 
         # Frame for Items List (Filenames/Foldernames)
@@ -257,22 +332,19 @@ class FileMoverApp:
 
         self.log_text_area = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, height=8, state='normal')
         self.log_text_area.pack(fill="both", expand=True)
-        # Initially set to disabled, will be enabled by execute_move
         self.log_text_area.config(state='disabled')
 
     def set_mode(self, mode_var_to_set):
         """Ensures mutual exclusivity of the mode checkboxes."""
-        # Uncheck all other modes
-        if mode_var_to_set != self.is_file_mode:
-            self.is_file_mode.set(False)
-        if mode_var_to_set != self.is_folder_mode:
-            self.is_folder_mode.set(False)
-        if mode_var_to_set != self.is_selective_mode:
-            self.is_selective_mode.set(False)
+        all_modes = [self.is_file_mode, self.is_folder_mode, self.is_selective_mode, self.is_archive_style_mode]
+        
+        for mode in all_modes:
+            if mode != mode_var_to_set:
+                mode.set(False)
 
-        # Set the clicked mode to True
+        # Ensure the clicked mode is set to True
         mode_var_to_set.set(True)
-        self.update_filenames_label() # Update the label based on the new mode
+        self.update_filenames_label()
 
     def update_filenames_label(self):
         """Updates the label of the items list based on the active mode."""
@@ -281,9 +353,10 @@ class FileMoverApp:
         elif self.is_folder_mode.get():
             self.files_frame_label.config(text="Folders to Move (one per line)")
         elif self.is_selective_mode.get():
-            self.files_frame_label.config(text="Selective Move: Folder then Files (e.g., folder1\\nfile1.txt\\nfile2.txt\\nfolder2\\n...)")
+            self.files_frame_label.config(text="Selective Move: Folder then Files (e.g., folder1\\nfile1.txt\\n...)")
+        elif self.is_archive_style_mode.get():
+            self.files_frame_label.config(text="Archive Style: Paste List (e.g., folderA/file1.txt)")
         else:
-            # This case should ideally not be reached if one mode is always selected
             self.files_frame_label.config(text="Items to Move (select an operation mode above)")
 
 
@@ -304,13 +377,12 @@ class FileMoverApp:
         item_names_list_str = self.filenames_text_area.get("1.0", tk.END)
         destination_folder = self.dest_path_entry.get()
 
-        # Clear previous log output and enable logging for the duration of the operation
         self.log_text_area.config(state='normal')
         self.log_text_area.delete("1.0", tk.END)
 
         if not source_folder or not destination_folder:
             print("Warning: Please select both source and destination folders.\n")
-            self.log_text_area.config(state='disabled') # Re-disable if early exit
+            self.log_text_area.config(state='disabled')
             return
 
         original_stdout = sys.stdout
@@ -318,18 +390,18 @@ class FileMoverApp:
 
         try:
             if self.is_file_mode.get():
-                move_items_simple(source_folder, item_names_list_str, destination_folder, False) # False for file mode
+                move_items_simple(source_folder, item_names_list_str, destination_folder, False)
             elif self.is_folder_mode.get():
-                move_items_simple(source_folder, item_names_list_str, destination_folder, True) # True for folder mode
+                move_items_simple(source_folder, item_names_list_str, destination_folder, True)
             elif self.is_selective_mode.get():
                 selective_move_logic(source_folder, item_names_list_str, destination_folder)
+            elif self.is_archive_style_mode.get():
+                archive_style_move_logic(source_folder, item_names_list_str, destination_folder)
             else:
-                print("Warning: Please select an operation mode (File, Folder, or Selective Move).\n")
+                print("Warning: Please select an operation mode.\n")
 
         finally:
-            # Restore original stdout
             sys.stdout = original_stdout
-            # Disable logging area after the operation is complete
             self.log_text_area.config(state='disabled')
 
 
