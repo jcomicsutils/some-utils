@@ -166,9 +166,15 @@ def archive_style_move_logic(source_folder: str, item_names_list_str: str, desti
     """
     Performs a move operation based on a list format like 'folder/file.ext'.
     It groups files by folder. If all files in a local source sub-folder are present in the
-    provided list, the entire folder is moved. Otherwise, only the specified files are moved.
+    provided list, the entire folder is moved. If the destination folder already exists,
+    the contents are merged. Otherwise, only the specified files are moved.
     """
     lines = [line.strip() for line in item_names_list_str.split('\n') if line.strip()]
+    
+    folders_moved = 0
+    files_moved = 0
+    failed_items = []
+
     # Use defaultdict to easily group files by their parent directory
     parsed_groups = defaultdict(list)
     
@@ -188,7 +194,7 @@ def archive_style_move_logic(source_folder: str, item_names_list_str: str, desti
             # Use a special key for files in the root of the source folder
             parsed_groups['__ROOT__'].append(file_name)
     
-    print(f"Parsed {len(parsed_groups)} groups for moving.\n")
+    print(f"Parsed {len(parsed_groups) + ('__ROOT__' in parsed_groups)} groups for moving.\n")
 
     if not os.path.isdir(source_folder):
         print(f"Error: Source folder '{source_folder}' does not exist.")
@@ -208,8 +214,10 @@ def archive_style_move_logic(source_folder: str, item_names_list_str: str, desti
                 try:
                     shutil.move(source_file_path, dest_file_path)
                     print(f"Moved root file '{file_name}' to '{destination_folder}'.")
+                    files_moved += 1
                 except Exception as e:
                     print(f"Error moving root file '{file_name}': {e}")
+                    failed_items.append(file_name)
             else:
                 print(f"Warning: Root file '{file_name}' not found in '{source_folder}'. Skipping.")
         print("--- Finished Processing Root Files ---\n")
@@ -223,28 +231,38 @@ def archive_style_move_logic(source_folder: str, item_names_list_str: str, desti
         print(f"\nProcessing folder '{folder_name}':")
         if not os.path.isdir(full_source_folder_path):
             print(f"  Warning: Source folder '{folder_name}' not found in '{source_folder}'. Skipping this group.")
+            failed_items.append(folder_name + " (source not found)")
             continue
 
-        # Get actual files (not directories) within the source sub-folder
         actual_files_in_source_folder = {f for f in os.listdir(full_source_folder_path) if os.path.isfile(os.path.join(full_source_folder_path, f))}
         required_files_set = set(files_in_list)
         
-        # ⭐ KEY CHANGE HERE: Check if all files in the local folder are present in the archive list.
-        # The archive list can have extra files that don't exist locally.
         if actual_files_in_source_folder.issubset(required_files_set):
-            # Scenario A: All local files are in the list. Move the entire folder.
             print(f"  Condition met: All local files are in the archive list. Moving entire folder.")
+            
             try:
-                # Use destination_folder as the target, shutil.move places the folder inside.
-                shutil.move(full_source_folder_path, destination_folder) 
-                print(f"  Successfully moved folder '{folder_name}' to '{destination_folder}'.")
+                if os.path.isdir(full_dest_folder_path):
+                    print(f"  Destination '{folder_name}' already exists. Merging contents.")
+                    # Move each item from source to destination, overwriting if necessary
+                    for item in os.listdir(full_source_folder_path):
+                        s_item = os.path.join(full_source_folder_path, item)
+                        d_item = os.path.join(full_dest_folder_path, item)
+                        shutil.move(s_item, d_item)
+                    os.rmdir(full_source_folder_path) # Remove the now-empty source folder
+                    print(f"  Successfully merged folder '{folder_name}' into '{destination_folder}'.")
+                else:
+                    # Destination does not exist, move the folder directly
+                    shutil.move(full_source_folder_path, destination_folder) 
+                    print(f"  Successfully moved folder '{folder_name}' to '{destination_folder}'.")
+                folders_moved += 1
             except Exception as e:
-                print(f"  Error moving entire folder '{folder_name}': {e}")
+                print(f"  Error processing folder '{folder_name}': {e}")
+                failed_items.append(folder_name)
         else:
             # Scenario B: Local folder has files not in the list. Move only the specified files.
             print(f"  Condition not met: Moving specific files only.")
             missing_from_list = actual_files_in_source_folder - required_files_set
-            print(f"  Note: Local files not found in archive list (will be left behind): {', '.join(missing_from_list)}")
+            print(f"  Note: Local files not in archive list (will be left behind): {', '.join(missing_from_list)}")
 
             os.makedirs(full_dest_folder_path, exist_ok=True)
             for file_name in files_in_list:
@@ -254,12 +272,23 @@ def archive_style_move_logic(source_folder: str, item_names_list_str: str, desti
                     try:
                         shutil.move(source_file_path, dest_file_path)
                         print(f"  Moved file '{file_name}' to '{full_dest_folder_path}'.")
+                        files_moved += 1
                     except Exception as e:
                         print(f"  Error moving file '{file_name}': {e}")
+                        failed_items.append(os.path.join(folder_name, file_name))
                 else:
-                    # This case is expected if the archive list has files not present locally.
                     pass
 
+    print(f"\n--- Summary ---")
+    print(f"Total lines in list: {len(lines)}")
+    print(f"Folders processed/moved completely: {folders_moved}")
+    print(f"Individual files moved: {files_moved}")
+    if failed_items:
+        print(f"Items that had issues: {len(failed_items)}")
+        print("  - " + "\n  - ".join(failed_items))
+    else:
+        print("All specified items were processed successfully.")
+    
     print("\nOperation Complete: Archive-style move operation finished.")
 
 class FileMoverApp:
