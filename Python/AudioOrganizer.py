@@ -420,11 +420,14 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
         if current_warnings:
             warnings_by_album[final_name] = sorted(list(set(current_warnings)))
 
-        planned_files = plan_file_renames(info, final_name)
-        if planned_files:
-            file_rename_plan.extend(planned_files)
-            for old_f, new_f in planned_files:
-                print(f"  Plan file: '{os.path.basename(old_f)}' -> '{os.path.basename(new_f)}'")
+        if "[Track Gap]" in current_warnings or "[Duplicate Track]" in current_warnings:
+            print(f"  -> Skipping file renames for '{final_name}' due to track gap or duplicate tracks.")
+        else:
+            planned_files = plan_file_renames(info, final_name)
+            if planned_files:
+                file_rename_plan.extend(planned_files)
+                for old_f, new_f in planned_files:
+                    print(f"  Plan file: '{os.path.basename(old_f)}' -> '{os.path.basename(new_f)}'")
 
         is_being_renamed = info['path'] != final_path
         if is_being_renamed:
