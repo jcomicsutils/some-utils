@@ -2,38 +2,70 @@ import os
 import tkinter as tk
 from tkinter import filedialog
 from mutagen.flac import FLAC
+from mutagen.mp3 import MP3
 from mutagen.easyid3 import EasyID3
 from mutagen import MutagenError
 import json
 import pyperclip
 
 def get_metadata(file_path, ext):
-    """Extracts album and artist metadata from an audio file."""
+    """Extracts album, artist, sample rate, and duration from an audio file."""
     try:
         album = ''
         artist = ''
+        sample_rate = 0
+        duration = 0.0
         if ext == '.flac':
             audio = FLAC(file_path)
             album = audio.tags.get('ALBUM', [''])[0].strip()
             artist_tags = audio.tags.get('ALBUMARTIST', audio.tags.get('ARTIST', ['']))
             artist = artist_tags[0].strip() if artist_tags else ''
+            sample_rate = audio.info.sample_rate
+            duration = audio.info.length
         elif ext == '.mp3':
-            audio = EasyID3(file_path)
-            album = audio.get('album', [''])[0].strip()
-            artist_tags = audio.get('albumartist', audio.get('artist', ['']))
+            audio_tech = MP3(file_path)
+            sample_rate = audio_tech.info.sample_rate
+            duration = audio_tech.info.length
+            
+            audio_tags = EasyID3(file_path)
+            album = audio_tags.get('album', [''])[0].strip()
+            artist_tags = audio_tags.get('albumartist', audio_tags.get('artist', ['']))
             artist = artist_tags[0].strip() if artist_tags else ''
         else:
-            return ('', '')
-        return (album, artist)
+            return ('', '', 0, 0.0)
+        return (album, artist, sample_rate, duration)
     except MutagenError as e:
         print(f"Error reading tags from {file_path}: {e}")
-        return ('', '')
+        return ('', '', 0, 0.0)
+
+def format_size(size_bytes):
+    """Converts bytes to a human-readable string (MB or GB)."""
+    if size_bytes == 0:
+        return "0 MB"
+    gb = size_bytes / (1024**3)
+    if gb >= 1:
+        return f"{gb:.1f} GB"
+    mb = size_bytes / (1024**2)
+    return f"{mb:.1f} MB"
+
+def format_duration(total_seconds):
+    """Formats total seconds into hh:mm:ss or mm:ss."""
+    if not total_seconds or total_seconds < 0:
+        return None
+    
+    total_seconds = int(total_seconds)
+    minutes, seconds = divmod(total_seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    
+    if hours > 0:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    else:
+        return f"{minutes}:{seconds:02d}"
 
 def build_string_manually(artist_name, album_list):
     """
-    Builds the JSON item string with exact formatting, including the final trailing comma.
+    Builds the JSON item string with exact formatting, including new tags.
     """
-    # Use json.dumps on individual strings to handle special characters like quotes.
     category_line = f'    "category": {json.dumps(artist_name)},'
     
     links_content = []
@@ -50,13 +82,26 @@ def build_string_manually(artist_name, album_list):
     links_content.append(folder_link)
     
     # 2. Each album link object
-    for album_title, audio_format in album_list:
+    for album_details in album_list:
+        # Build the tags list dynamically
+        tags = [f'"{album_details["format"]}"']
+        if album_details.get("track_count"):
+            tags.append(f'"{album_details["track_count"]} tracks"')
+        if album_details.get("duration_str"):
+            tags.append(f'"{album_details["duration_str"]}"')
+        if album_details.get("sample_rate_khz"):
+            tags.append(f'"{album_details["sample_rate_khz"]:.1f}kHz"')
+        if album_details.get("size_str"):
+            tags.append(f'"{album_details["size_str"]}"')
+            
+        tags_str = ", ".join(tags)
+
         album_link = (
             '      {\n'
-            f'        "title": {json.dumps(album_title)},\n'
+            f'        "title": {json.dumps(album_details["title"])},\n'
             '        "url": [],\n'
             '        "description": "",\n'
-            f'        "tags": ["{audio_format}"]\n'
+            f'        "tags": [{tags_str}]\n'
             '      }'
         )
         links_content.append(album_link)
@@ -80,30 +125,53 @@ def build_string_manually(artist_name, album_list):
 def process_directory(directory):
     """
     Processes a directory to find all albums, verifies they belong to a single artist,
-    and then generates the JSON item string.
+    and then generates the JSON item string with detailed tags.
     """
     all_albums_by_artist = {}
     for root, _, files in os.walk(directory):
-        # This logic assumes each sub-folder is a single, consistent album
+        # Data for the current directory (considered one album)
         album_title, album_artist, audio_format = (None, None, None)
-        has_audio = False
+        track_count = 0
+        total_size_bytes = 0
+        total_duration_seconds = 0.0
+        sample_rates = []
+
+        first_audio_file_found = False
         for file in files:
+            file_path = os.path.join(root, file)
+            total_size_bytes += os.path.getsize(file_path)
+            
             ext = os.path.splitext(file)[1].lower()
             if ext in {'.flac', '.mp3'}:
-                has_audio = True
-                current_album, current_artist = get_metadata(os.path.join(root, file), ext)
-                album_title = current_album
-                album_artist = current_artist
-                audio_format = ext[1:].upper()
-                # We only need one valid file to get the album info
-                break 
+                track_count += 1
+                current_album, current_artist, current_rate, current_duration = get_metadata(file_path, ext)
+                
+                total_duration_seconds += current_duration
+                if current_rate > 0:
+                    sample_rates.append(current_rate)
+                
+                if not first_audio_file_found:
+                    album_title = current_album
+                    album_artist = current_artist
+                    audio_format = ext[1:].upper()
+                    first_audio_file_found = True
         
-        if has_audio and album_artist and album_title:
+        # If we found an album in this folder, process and store it
+        if first_audio_file_found and album_artist and album_title:
             if album_artist not in all_albums_by_artist:
                 all_albums_by_artist[album_artist] = []
-            # Add album if not already in the list to avoid duplicates
-            if (album_title, audio_format) not in all_albums_by_artist[album_artist]:
-                all_albums_by_artist[album_artist].append((album_title, audio_format))
+            
+            min_sample_rate_khz = min(sample_rates) / 1000 if sample_rates else None
+
+            album_data = {
+                "title": album_title,
+                "format": audio_format,
+                "track_count": track_count,
+                "size_str": format_size(total_size_bytes),
+                "sample_rate_khz": min_sample_rate_khz,
+                "duration_str": format_duration(total_duration_seconds),
+            }
+            all_albums_by_artist[album_artist].append(album_data)
 
     if not all_albums_by_artist:
         print("No valid audio albums found in the selected directory.")
