@@ -6,9 +6,6 @@ from collections import Counter
 from typing import Optional, Dict, List, Tuple
 
 try:
-    # Mutagen is a powerful third-party library for handling audio metadata.
-    # It needs to be installed separately.
-    # You can install it by running: pip install mutagen
     from mutagen import File as MutagenFile, MutagenError
 except ImportError:
     print("Error: The 'mutagen' library is required.")
@@ -32,15 +29,16 @@ def sanitize_filename(name: str, is_path_component: bool = False) -> str:
     name = name.strip(' .')
     return name
 
-def get_audio_metadata(file_path: str) -> Optional[Dict[str, str]]:
-    """Extracts metadata from a given audio file, returning a dict even if no tags are present."""
+def get_audio_metadata(file_path: str) -> Tuple[Optional[Dict[str, str]], Optional[str]]:
+    """
+    Extracts metadata from a given audio file.
+    Returns a tuple: (metadata_dict, warning_string_or_None)
+    """
     try:
         audio = MutagenFile(file_path, easy=True)
 
-        # Initialize all tags to None
         album = artist = albumartist = title = date = track = disc = year = invalid_year_tag = None
 
-        # If the file loaded and has tags, extract them
         if audio:
             album = audio.get('album', [None])[0]
             artist = audio.get('artist', [None])[0]
@@ -50,7 +48,6 @@ def get_audio_metadata(file_path: str) -> Optional[Dict[str, str]]:
             track = audio.get('tracknumber', [None])[0]
             disc = audio.get('discnumber', [None])[0]
         
-        # Process date tag if it exists
         if date:
             date_str = str(date).strip()
             if re.fullmatch(r'\d{4}', date_str):
@@ -58,18 +55,19 @@ def get_audio_metadata(file_path: str) -> Optional[Dict[str, str]]:
             else:
                 invalid_year_tag = date_str
         
-        # Always return a dictionary for valid files, even if tags are missing
-        return {
+        metadata = {
             'album': str(album) if album else None, 'year': str(year) if year else None,
             'artist': str(artist) if artist else None, 'title': str(title) if title else None,
             'track': str(track) if track else None, 'disc': str(disc) if disc else None,
             'albumartist': str(albumartist) if albumartist else None,
             'invalid_year_tag': invalid_year_tag
         }
+        return metadata, None
+        
     except MutagenError as e:
-        # Only return None if the file itself cannot be read or parsed
-        print(f"  [Warning] Could not read metadata from {os.path.basename(file_path)}: {e}")
-        return None
+        warning = f"Could not read metadata from {os.path.basename(file_path)}: {e}"
+        print(f"  [Warning] {warning}")
+        return None, warning
 
 def get_cover_art_info(file_path: str) -> Tuple[int, Optional[str]]:
     """Gets cover art count and a hash of the first art piece from a file."""
@@ -78,11 +76,11 @@ def get_cover_art_info(file_path: str) -> Tuple[int, Optional[str]]:
         if not audio: return 0, None
 
         pictures = []
-        if hasattr(audio, 'pictures') and audio.pictures:  # FLAC, OGG
+        if hasattr(audio, 'pictures') and audio.pictures:  
             pictures = audio.pictures
-        elif 'APIC:' in audio:  # MP3
+        elif 'APIC:' in audio:  
             pictures = audio.tags.getall('APIC:')
-        elif 'covr' in audio:  # M4A
+        elif 'covr' in audio:  
             pictures = audio['covr']
 
         count = len(pictures)
@@ -94,7 +92,7 @@ def get_cover_art_info(file_path: str) -> Tuple[int, Optional[str]]:
     except (MutagenError, KeyError, IndexError):
         return 0, None
 
-def remove_redundant_disc_tags(info: Dict, final_name: str):
+def remove_redundant_disc_tags(info: Dict, final_name: str, general_warnings: List[str]):
     """Removes the 'discnumber' tag from files and updates the in-memory metadata."""
     print(f"  -> Removing redundant discnumber tag from files in '{final_name}'...")
     for md in info['files_metadata']:
@@ -107,9 +105,9 @@ def remove_redundant_disc_tags(info: Dict, final_name: str):
                 audio.save()
                 md['disc'] = None
         except Exception as e:
-            print(f"    [Error] Could not update tags for {filename}: {e}")
+            general_warnings.append(f"[Error] Could not update tags for {filename} in '{final_name}': {e}")
 
-def flatten_container_folder(dirpath: str, dirnames: List[str]) -> bool:
+def flatten_container_folder(dirpath: str, dirnames: List[str], general_warnings: List[str]) -> bool:
     """Moves files from subfolders into the parent, then deletes empty subfolders."""
     print(f"  -> Flattening '{os.path.basename(dirpath)}'...")
     try:
@@ -131,7 +129,7 @@ def flatten_container_folder(dirpath: str, dirnames: List[str]) -> bool:
         print(f"  -> Flattening complete.")
         return True
     except OSError as e:
-        print(f"  [Error] Failed to flatten folder: {e}")
+        general_warnings.append(f"[Error] Failed to flatten folder '{os.path.basename(dirpath)}': {e}")
         return False
 
 def analyze_album_folder(dirpath: str, filenames: List[str]) -> Optional[Dict]:
@@ -142,9 +140,14 @@ def analyze_album_folder(dirpath: str, filenames: List[str]) -> Optional[Dict]:
     print(f"Analyzing: {os.path.basename(dirpath)}")
     
     files_metadata = []
+    album_warnings = []
     for filename in audio_files_with_ext:
         filepath = os.path.join(dirpath, filename)
-        metadata = get_audio_metadata(filepath)
+        metadata, warning = get_audio_metadata(filepath)
+        
+        if warning:
+            album_warnings.append(warning)
+            
         if metadata:
             metadata['filename'] = filename
             count, hash_val = get_cover_art_info(filepath)
@@ -169,7 +172,8 @@ def analyze_album_folder(dirpath: str, filenames: List[str]) -> Optional[Dict]:
     return {
         'path': dirpath, 'album': most_common_album, 'year': year,
         'files_metadata': files_metadata,
-        'has_images': any(f.lower().endswith(SUPPORTED_IMAGE_EXTENSIONS) for f in filenames)
+        'has_images': any(f.lower().endswith(SUPPORTED_IMAGE_EXTENSIONS) for f in filenames),
+        'album_warnings': album_warnings
     }
 
 def check_cover_art(files_metadata: List[Dict]) -> List[str]:
@@ -310,7 +314,7 @@ def plan_file_renames(info: Dict, final_folder_name: str) -> List[Tuple[str, str
             
     return file_rename_plan
 
-def organize_music_folders(root_folder: str, check_only: bool = False, force_yes: bool = False, force_no: bool = False):
+def organize_music_folders(root_folder: str, check_only: bool = False, force_yes: bool = False, force_no: bool = False, folder_only: bool = False):
     """Scans and organizes music folders and files."""
     general_warnings: List[str] = []
     warnings_by_album: Dict[str, List[str]] = {}
@@ -344,7 +348,7 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
                 except (EOFError, KeyboardInterrupt): print("\nCancelled."); choice = 'n'
             
             if choice == 'y':
-                if flatten_container_folder(dirpath, dirnames):
+                if flatten_container_folder(dirpath, dirnames, general_warnings):
                     dirnames[:], filenames = [], os.listdir(dirpath)
                     info = analyze_album_folder(dirpath, filenames)
                     if info: folder_info.append(info)
@@ -357,14 +361,13 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
         info = analyze_album_folder(dirpath, filenames)
         if info: folder_info.append(info)
 
-    # --- Deeper Analysis for Duplicates ---
-    for info in folder_info:
-        info['base_name'] = sanitize_filename(info['album'])
+    album_title_lower_counts = Counter(info['album'].lower() for info in folder_info if info['album'])
+    duplicate_lower_titles = {album_lower for album_lower, count in album_title_lower_counts.items() if count > 1}
     
-    album_title_counts = Counter(info['album'] for info in folder_info)
-    duplicate_album_titles = {album for album, count in album_title_counts.items() if count > 1}
+    duplicate_album_titles = {info['album'] for info in folder_info if info['album'] and info['album'].lower() in duplicate_lower_titles}
 
     for info in folder_info:
+        info['base_name'] = sanitize_filename(info['album'])
         if info['album'] in duplicate_album_titles and info['year']:
             info['base_name'] = f"{info['base_name']} ({info['year']})"
 
@@ -388,6 +391,10 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
         final_path = os.path.join(parent_dir, final_name)
         
         current_warnings = []
+        
+        if info.get('album_warnings'):
+            current_warnings.extend(info['album_warnings'])
+            
         if not info['has_images']:
             current_warnings.append("[No Image]")
         
@@ -408,10 +415,10 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
         if has_disc and has_no_disc:
             current_warnings.append("[Inconsistent Disc #]")
         elif has_disc and not has_no_disc and len(set(all_discs)) == 1:
-            if check_only:
+            if check_only or folder_only:
                 current_warnings.append("[Redundant Disc #]")
             else:
-                remove_redundant_disc_tags(info, final_name)
+                remove_redundant_disc_tags(info, final_name, general_warnings)
         
         track_disc_pairs = [(md.get('track'), md.get('disc')) for md in info['files_metadata'] if md.get('track')]
         if any(count > 1 for count in Counter(track_disc_pairs).values()):
@@ -420,19 +427,20 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
         if current_warnings:
             warnings_by_album[final_name] = sorted(list(set(current_warnings)))
 
-        if "[Track Gap]" in current_warnings or "[Duplicate Track]" in current_warnings:
-            print(f"  -> Skipping file renames for '{final_name}' due to track gap or duplicate tracks.")
-        else:
-            planned_files = plan_file_renames(info, final_name)
-            if planned_files:
-                file_rename_plan.extend(planned_files)
-                for old_f, new_f in planned_files:
-                    print(f"  Plan file: '{os.path.basename(old_f)}' -> '{os.path.basename(new_f)}'")
+        if not folder_only:
+            if "[Track Gap]" in current_warnings or "[Duplicate Track]" in current_warnings:
+                print(f"  -> Skipping file renames for '{final_name}' due to track gap or duplicate tracks.")
+            else:
+                planned_files = plan_file_renames(info, final_name)
+                if planned_files:
+                    file_rename_plan.extend(planned_files)
+                    for old_f, new_f in planned_files:
+                        print(f"  Plan file: '{os.path.basename(old_f)}' -> '{os.path.basename(new_f)}'")
 
         is_being_renamed = info['path'] != final_path
         if is_being_renamed:
             if os.path.isdir(parent_dir) and final_name in os.listdir(parent_dir) or final_path in proposed_new_paths:
-                print(f"  [Conflict] Folder '{final_name}' already exists. Skipping rename for '{os.path.basename(info['path'])}'.")
+                general_warnings.append(f"[Conflict] Folder '{final_name}' already exists. Skipping rename for '{os.path.basename(info['path'])}'.")
                 continue
             folder_rename_plan.append((info['path'], final_path))
             proposed_new_paths.add(final_path)
@@ -454,7 +462,8 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
                 try:
                     os.rename(old_path, new_path)
                     print(f"  Renamed file: '{os.path.basename(old_path)}' -> '{os.path.basename(new_path)}'")
-                except OSError as e: print(f"  Error renaming file '{os.path.basename(old_path)}': {e}")
+                except OSError as e:
+                    general_warnings.append(f"[Error] Renaming file '{os.path.basename(old_path)}': {e}")
 
         if folder_rename_plan:
             print("\nStep 2: Renaming folders...")
@@ -463,12 +472,13 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
                 try:
                     os.rename(old_path, new_path)
                     print(f"  Renamed folder: '{os.path.basename(old_path)}' -> '{os.path.basename(new_path)}'")
-                except OSError as e: print(f"  Error renaming folder '{os.path.basename(old_path)}': {e}")
+                except OSError as e:
+                    general_warnings.append(f"[Error] Renaming folder '{os.path.basename(old_path)}': {e}")
 
         print("\nOrganization complete!")
 
     if general_warnings or warnings_by_album:
-        print("\n--- Phase 4: Warnings Found ---")
+        print("\n--- Phase 4: Warnings & Errors Found ---")
         for warning in sorted(general_warnings):
             print(warning)
         for album_name, tags in sorted(warnings_by_album.items()):
@@ -478,15 +488,25 @@ def organize_music_folders(root_folder: str, check_only: bool = False, force_yes
 if __name__ == "__main__":
     args = sys.argv[1:]
     check_only_flags, force_yes_flags, force_no_flags = ['-c', '--check'], ['-y', '--force-yes'], ['-n', '--force-no']
+    folder_only_flags = ['--folder-only']
+    
     check_only_mode = any(flag in args for flag in check_only_flags)
     force_yes_mode = any(flag in args for flag in force_yes_flags)
     force_no_mode = any(flag in args for flag in force_no_flags)
+    folder_only_mode = any(flag in args for flag in folder_only_flags)
     
-    args = [arg for arg in args if arg not in check_only_flags + force_yes_flags + force_no_flags]
+    args = [arg for arg in args if arg not in check_only_flags + force_yes_flags + force_no_flags + folder_only_flags]
     target_folder = args[0] if args else input("Enter path to music folder: ")
 
     if check_only_mode: print(">>> Running in Check-Only Mode <<<")
+    if folder_only_mode: print(">>> Running in Folder-Only Mode (Files will not be renamed) <<<")
     if force_yes_mode: print(">>> Forcing 'Yes' to all flatten prompts <<<")
     if force_no_mode: print(">>> Forcing 'No' to all flatten prompts <<<")
         
-    organize_music_folders(target_folder, check_only=check_only_mode, force_yes=force_yes_mode, force_no=force_no_mode)
+    organize_music_folders(
+        target_folder, 
+        check_only=check_only_mode, 
+        force_yes=force_yes_mode, 
+        force_no=force_no_mode,
+        folder_only=folder_only_mode
+    )
